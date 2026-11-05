@@ -5,6 +5,7 @@ import type {
 	ProductInput,
 } from "@/modules/catalog/domain/product";
 import type { SettingsPatch, SiteSettings } from "@/modules/settings/domain/site-settings";
+import type { Showcase, ShowcaseInput } from "@/modules/showcase/domain/showcase";
 
 export class ApiError extends Error {
 	readonly status: number;
@@ -77,6 +78,17 @@ export const adminApi = {
 		request<Category>(resource("/api/categories", id), json("PUT", input)),
 	deleteCategory: (id: string) =>
 		request<void>(resource("/api/categories", id), { method: "DELETE" }),
+	reorderCategories: (ids: string[]) =>
+		request<void>("/api/categories/order", json("PUT", { ids })),
+
+	createShowcase: (input: ShowcaseInput) =>
+		request<Showcase>("/api/showcases", json("POST", input)),
+	updateShowcase: (id: string, input: ShowcaseInput) =>
+		request<Showcase>(resource("/api/showcases", id), json("PUT", input)),
+	deleteShowcase: (id: string) =>
+		request<void>(resource("/api/showcases", id), { method: "DELETE" }),
+	reorderShowcases: (ids: string[]) =>
+		request<void>("/api/showcases/order", json("PUT", { ids })),
 
 	updateSettings: (patch: SettingsPatch) =>
 		request<SiteSettings>("/api/settings", json("PATCH", patch)),

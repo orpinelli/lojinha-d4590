@@ -23,26 +23,24 @@ import { applyServerErrors } from "@/lib/form-errors";
 import { categoryInputSchema } from "@/modules/catalog/domain/catalog-schemas";
 import type { CategoryInput } from "@/modules/catalog/domain/product";
 
-type EditableCategory = { id: string; name: string; position: number };
-
-/** Create (no `category`) or edit a category in a dialog. */
+/** Create (no `category`) or rename a category. Order is set by dragging. */
 export function CategoryDialog({
 	category,
 	trigger,
 }: {
-	category?: EditableCategory;
+	category?: { id: string; name: string };
 	trigger: ReactNode;
 }) {
 	const [open, setOpen] = useState(false);
 	const mutate = useAdminMutation();
 	const form = useForm<CategoryInput>({
 		resolver: zodResolver(categoryInputSchema),
-		defaultValues: { name: category?.name ?? "", position: category?.position ?? 0 },
+		defaultValues: { name: category?.name ?? "" },
 	});
 
 	useEffect(() => {
-		if (open) form.reset({ name: category?.name ?? "", position: category?.position ?? 0 });
-	}, [open, category, form]);
+		if (open) form.reset({ name: category?.name ?? "" });
+	}, [open, category?.name, form]);
 
 	const onSubmit = form.handleSubmit(async (values) => {
 		await mutate(
@@ -61,16 +59,13 @@ export function CategoryDialog({
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>{category ? "Editar categoria" : "Nova categoria"}</DialogTitle>
-					<DialogDescription>Cada categoria vira uma seção e um item do menu da loja.</DialogDescription>
+					<DialogDescription>
+						Use as categorias para montar as vitrines da página inicial.
+					</DialogDescription>
 				</DialogHeader>
 				<Form {...form}>
 					<form onSubmit={onSubmit} noValidate className="grid gap-5">
-						<Field.Text name="name" label="Nome" placeholder="Ex.: Vestuário" maxLength={60} />
-						<Field.Number
-							name="position"
-							label="Ordem"
-							description="Números menores aparecem primeiro na loja."
-						/>
+						<Field.Text name="name" label="Nome" placeholder="Ex.: Camisetas" maxLength={60} />
 						<DialogFooter>
 							<DialogClose asChild>
 								<Button type="button" variant="outline" className="h-10 hover:bg-muted hover:text-foreground">

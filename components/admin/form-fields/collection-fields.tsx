@@ -1,23 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { useFormContext } from "react-hook-form";
-import {
-	ChevronLeft,
-	ChevronRight,
-	ImageIcon,
-	ImagePlus,
-	Loader2,
-	Plus,
-	Star,
-	Trash2,
-	Upload,
-	X,
-} from "lucide-react";
+import { ImageIcon, ImagePlus, Loader2, Plus, Star, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Sortable, SortableHandle, SortableItem } from "@/components/ui/sortable";
 import { useImageUpload } from "@/hooks/use-image-upload";
 import { cn } from "@/lib/utils";
 import { DEFAULT_SIZES } from "@/modules/catalog/domain/product";
@@ -52,6 +42,26 @@ function HiddenFileInput({
 }
 
 const neutralButton = "hover:bg-muted hover:text-foreground";
+
+/** Toggle button shared by sizes and category pickers. */
+export function ToggleChip({
+	pressed,
+	className,
+	...props
+}: ComponentProps<"button"> & { pressed: boolean }) {
+	return (
+		<button
+			type="button"
+			aria-pressed={pressed}
+			className={cn(
+				"min-h-10 min-w-12 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
+				pressed ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted",
+				className,
+			)}
+			{...props}
+		/>
+	);
+}
 
 /** Single image (logo, favicon). */
 export function ImageField({
@@ -133,10 +143,8 @@ function TileButton({
 			disabled={disabled}
 			onClick={onClick}
 			className={cn(
-				"size-8 p-0",
-				destructive
-					? "text-destructive hover:bg-destructive/10 hover:text-destructive"
-					: neutralButton,
+				"size-9 p-0",
+				destructive ? "text-destructive hover:bg-destructive/10 hover:text-destructive" : neutralButton,
 			)}
 		>
 			{children}
@@ -144,7 +152,17 @@ function TileButton({
 	);
 }
 
-/** Ordered gallery: first image is the cover; reorder, set cover, remove. */
+/** Stable, unique ids for possibly repeated URLs (needed by drag and drop). */
+function imageIds(images: string[]): string[] {
+	const seen = new Map<string, number>();
+	return images.map((url) => {
+		const count = seen.get(url) ?? 0;
+		seen.set(url, count + 1);
+		return `${url}#${count}`;
+	});
+}
+
+/** Ordered gallery: drag to reorder; the first image is the cover. */
 export function ImageListField({
 	name,
 	label,
@@ -162,65 +180,65 @@ export function ImageListField({
 			name={name}
 			render={({ field }) => {
 				const images: string[] = field.value ?? [];
-				const move = (from: number, to: number) => {
-					const next = [...images];
-					const [item] = next.splice(from, 1);
-					next.splice(to, 0, item);
-					field.onChange(next);
-				};
+				const ids = imageIds(images);
+				const byId = new Map(ids.map((id, index) => [id, images[index]]));
+				const moveToFront = (index: number) =>
+					field.onChange([images[index], ...images.filter((_, i) => i !== index)]);
 
 				return (
 					<FieldFrame label={label} description={description} className={className} asControl={false}>
-						<div className="grid grid-cols-2 gap-3 min-[560px]:grid-cols-3 md:grid-cols-4">
-							{images.map((url, index) => (
-								<div key={`${url}-${index}`} className="relative overflow-hidden rounded-lg border bg-muted">
-									<div className="relative aspect-square">
-										<Image src={url} alt={`Imagem ${index + 1}`} fill sizes="200px" className="object-cover" />
-									</div>
-									{index === 0 && (
-										<span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
-											Capa
-										</span>
-									)}
-									<div className="flex items-center justify-between gap-1 border-t bg-background p-1">
-										<TileButton label="Mover para a esquerda" disabled={index === 0} onClick={() => move(index, index - 1)}>
-											<ChevronLeft className="size-4" />
-										</TileButton>
-										<TileButton label="Usar como capa" disabled={index === 0} onClick={() => move(index, 0)}>
-											<Star className="size-4" />
-										</TileButton>
-										<TileButton
-											label="Mover para a direita"
-											disabled={index === images.length - 1}
-											onClick={() => move(index, index + 1)}
-										>
-											<ChevronRight className="size-4" />
-										</TileButton>
-										<TileButton
-											label="Remover imagem"
-											destructive
-											onClick={() => field.onChange(images.filter((_, i) => i !== index))}
-										>
-											<Trash2 className="size-4" />
-										</TileButton>
-									</div>
-								</div>
-							))}
-							{images.length < max && (
-								<FormControl>
-									<button
-										type="button"
-										disabled={uploading}
-										onClick={() => inputRef.current?.click()}
-										onBlur={field.onBlur}
-										className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-2 text-center text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+						<Sortable
+							ids={ids}
+							layout="grid"
+							getLabel={(id) => `Imagem ${ids.indexOf(id) + 1}`}
+							onReorder={(next) => field.onChange(next.map((id) => byId.get(id) ?? ""))}
+						>
+							<div className="grid grid-cols-2 gap-3 min-[560px]:grid-cols-3 md:grid-cols-4">
+								{images.map((url, index) => (
+									<SortableItem
+										key={ids[index]}
+										id={ids[index]}
+										className="overflow-hidden rounded-lg border bg-muted"
 									>
-										{uploading ? <Loader2 className="size-6 animate-spin" /> : <ImagePlus className="size-6" />}
-										<span>{uploading ? "Enviando..." : "Adicionar imagens"}</span>
-									</button>
-								</FormControl>
-							)}
-						</div>
+										<div className="relative aspect-square">
+											<Image src={url} alt={`Imagem ${index + 1}`} fill sizes="200px" className="object-cover" />
+										</div>
+										{index === 0 && (
+											<span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+												Capa
+											</span>
+										)}
+										<div className="flex items-center justify-between gap-1 border-t bg-background p-1">
+											<SortableHandle label={`Mover imagem ${index + 1}`} className="size-9" />
+											<TileButton label="Usar como capa" disabled={index === 0} onClick={() => moveToFront(index)}>
+												<Star className="size-4" />
+											</TileButton>
+											<TileButton
+												label="Remover imagem"
+												destructive
+												onClick={() => field.onChange(images.filter((_, i) => i !== index))}
+											>
+												<Trash2 className="size-4" />
+											</TileButton>
+										</div>
+									</SortableItem>
+								))}
+								{images.length < max && (
+									<FormControl>
+										<button
+											type="button"
+											disabled={uploading}
+											onClick={() => inputRef.current?.click()}
+											onBlur={field.onBlur}
+											className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-2 text-center text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+										>
+											{uploading ? <Loader2 className="size-6 animate-spin" /> : <ImagePlus className="size-6" />}
+											<span>{uploading ? "Enviando..." : "Adicionar imagens"}</span>
+										</button>
+									</FormControl>
+								)}
+							</div>
+						</Sortable>
 						<HiddenFileInput
 							inputRef={inputRef}
 							multiple
@@ -308,6 +326,54 @@ export function StringListField({
 	);
 }
 
+/** Multi-select as toggle chips; keeps the order in which items were chosen. */
+export function ChipsField({
+	name,
+	label,
+	description,
+	className,
+	options,
+	emptyMessage = "Nenhuma opção disponível.",
+}: BaseFieldProps & { options: { value: string; label: string }[]; emptyMessage?: string }) {
+	const { control } = useFormContext();
+	return (
+		<FormField
+			control={control}
+			name={name}
+			render={({ field }) => {
+				const selected: string[] = field.value ?? [];
+				const toggle = (value: string) =>
+					field.onChange(
+						selected.includes(value)
+							? selected.filter((item) => item !== value)
+							: [...selected, value],
+					);
+				return (
+					<FieldFrame label={label} description={description} className={className} asControl={false}>
+						{options.length === 0 ? (
+							<p className="text-sm text-muted-foreground">{emptyMessage}</p>
+						) : (
+							<FormControl>
+								<div role="group" aria-label={label} className="flex flex-wrap gap-2">
+									{options.map((option) => (
+										<ToggleChip
+											key={option.value}
+											pressed={selected.includes(option.value)}
+											onClick={() => toggle(option.value)}
+										>
+											{option.label}
+										</ToggleChip>
+									))}
+								</div>
+							</FormControl>
+						)}
+					</FieldFrame>
+				);
+			}}
+		/>
+	);
+}
+
 const DEFAULTS: readonly string[] = DEFAULT_SIZES;
 
 function orderSizes(sizes: string[]): string[] {
@@ -345,25 +411,11 @@ export function SizesField({ name, label, description, className }: BaseFieldPro
 						<div className="space-y-3">
 							<FormControl>
 								<div role="group" aria-label={label} className="flex flex-wrap gap-2">
-									{options.map((size) => {
-										const active = selected.includes(size);
-										return (
-											<button
-												key={size}
-												type="button"
-												aria-pressed={active}
-												onClick={() => toggle(size)}
-												className={cn(
-													"min-h-10 min-w-12 rounded-md border px-3 text-sm font-medium transition-colors",
-													active
-														? "border-primary bg-primary text-primary-foreground"
-														: "bg-background hover:bg-muted",
-												)}
-											>
-												{size}
-											</button>
-										);
-									})}
+									{options.map((size) => (
+										<ToggleChip key={size} pressed={selected.includes(size)} onClick={() => toggle(size)}>
+											{size}
+										</ToggleChip>
+									))}
 								</div>
 							</FormControl>
 							<div className="flex gap-2">

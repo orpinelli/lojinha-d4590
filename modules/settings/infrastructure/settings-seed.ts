@@ -26,7 +26,6 @@ export function defaultSiteSettings(): SiteSettings {
 				"Uma coleção exclusiva que celebra a excelência e o compromisso com o serviço.",
 		},
 		labels: {
-			featured: "Mais Vendido",
 			shipping: "Frete Grátis",
 		},
 		contact: {

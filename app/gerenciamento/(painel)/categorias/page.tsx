@@ -1,8 +1,8 @@
-import { Pencil, Plus, Tags } from "lucide-react";
+import { Plus, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DeleteButton } from "@/components/admin/actions";
-import { EmptyState, PageHeader, ResourceList } from "@/components/admin/blocks";
+import { EmptyState, PageHeader } from "@/components/admin/blocks";
 import { CategoryDialog } from "@/components/admin/category-dialog";
+import { CategoryList } from "@/components/admin/sortable-lists";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
 
@@ -16,7 +16,9 @@ export default async function CategoriesPage() {
 			<PageHeader.Root>
 				<PageHeader.Content>
 					<PageHeader.Title>Categorias</PageHeader.Title>
-					<PageHeader.Description>Cada categoria vira uma seção e um item do menu da loja.</PageHeader.Description>
+					<PageHeader.Description>
+						Organize os produtos (Camisetas, Acessórios, Canecas…). Arraste pela alça ⠿ para ordenar.
+					</PageHeader.Description>
 				</PageHeader.Content>
 				<PageHeader.Actions>
 					<CategoryDialog
@@ -35,35 +37,10 @@ export default async function CategoriesPage() {
 						<Tags />
 					</EmptyState.Icon>
 					<EmptyState.Title>Nenhuma categoria</EmptyState.Title>
-					<EmptyState.Description>Crie categorias como Vestuário, Acessórios e Combos.</EmptyState.Description>
+					<EmptyState.Description>Crie categorias como Camisetas, Acessórios e Combos.</EmptyState.Description>
 				</EmptyState.Root>
 			) : (
-				<ResourceList.Root>
-					{categories.map((category) => (
-						<ResourceList.Item key={category.id}>
-							<ResourceList.Content>
-								<ResourceList.Title>{category.name}</ResourceList.Title>
-								<ResourceList.Meta>
-									<span>
-										{category.productCount} produto{category.productCount === 1 ? "" : "s"}
-									</span>
-									<span>Ordem {category.position}</span>
-								</ResourceList.Meta>
-							</ResourceList.Content>
-							<ResourceList.Actions>
-								<CategoryDialog
-									category={{ id: category.id, name: category.name, position: category.position }}
-									trigger={
-										<Button variant="outline" className="h-10 hover:bg-muted hover:text-foreground">
-											<Pencil /> Editar
-										</Button>
-									}
-								/>
-								<DeleteButton resource="category" id={category.id} name={category.name} />
-							</ResourceList.Actions>
-						</ResourceList.Item>
-					))}
-				</ResourceList.Root>
+				<CategoryList categories={categories} />
 			)}
 		</>
 	);

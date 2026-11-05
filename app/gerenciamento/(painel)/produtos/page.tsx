@@ -8,7 +8,7 @@ import { EmptyState, PageHeader, ResourceList } from "@/components/admin/blocks"
 import { Price } from "@/components/store/price";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
-import { productCover } from "@/modules/catalog/domain/product";
+import { byPositionThenName, productCover } from "@/modules/catalog/domain/product";
 
 const editPath = (id: string) => `/gerenciamento/produtos/${encodeURIComponent(id)}`;
 
@@ -24,8 +24,7 @@ export default async function ProductsPage() {
 		(a, b) =>
 			(categoryById.get(a.categoryId)?.position ?? Number.MAX_SAFE_INTEGER) -
 				(categoryById.get(b.categoryId)?.position ?? Number.MAX_SAFE_INTEGER) ||
-			a.position - b.position ||
-			a.name.localeCompare(b.name, "pt-BR"),
+			byPositionThenName(a, b),
 	);
 
 	return (
@@ -69,7 +68,6 @@ export default async function ProductsPage() {
 									<span>{categoryById.get(product.categoryId)?.name ?? "Sem categoria"}</span>
 									<Price cents={product.priceInCents} className="font-medium" />
 									{!product.active && <Badge variant="outline">Oculto</Badge>}
-									{product.featured && <Badge>Destaque</Badge>}
 								</ResourceList.Meta>
 							</ResourceList.Content>
 							<ResourceList.Actions>

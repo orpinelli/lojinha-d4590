@@ -19,19 +19,18 @@ export function ShippingBadge({ className }: { className?: string }) {
 	);
 }
 
-/** "Mais Vendido" (text managed in the admin; hidden when empty). */
-export function FeaturedBadge({ className }: { className?: string }) {
-	const { labels } = useSiteSettings();
-	if (!labels.featured) return null;
+/** Highlight seal; the text is the title of the "Destaque" showcase. */
+export function FeaturedBadge({ label, className }: { label?: string; className?: string }) {
+	if (!label) return null;
 	return (
 		<div
 			className={cn(
-				"inline-flex items-center gap-1.5 rounded-full border border-primary-hover bg-primary px-3 py-1 text-primary-foreground shadow-md",
+				"inline-flex max-w-[calc(100%-2rem)] items-center gap-1.5 rounded-full border border-primary-hover bg-primary px-3 py-1 text-primary-foreground shadow-md",
 				className,
 			)}
 		>
-			<Star className="size-3 fill-current" aria-hidden />
-			<span className="text-xs font-medium tracking-wide uppercase">{labels.featured}</span>
+			<Star className="size-3 shrink-0 fill-current" aria-hidden />
+			<span className="truncate text-xs font-medium tracking-wide uppercase">{label}</span>
 		</div>
 	);
 }

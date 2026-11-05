@@ -25,3 +25,11 @@ export function requiresSize(product: Pick<Product, "sizes">): boolean {
 export function productPath(product: Pick<Product, "id">): string {
 	return `/product/${encodeURIComponent(product.id)}`;
 }
+
+/** Default order used across the app: position, then name. */
+export function byPositionThenName(
+	a: { position: number; name: string },
+	b: { position: number; name: string },
+): number {
+	return a.position - b.position || a.name.localeCompare(b.name, "pt-BR");
+}

@@ -2,23 +2,30 @@ import type { Product } from "@/modules/catalog/domain/product";
 import { Carousel } from "./carousel";
 import { CatalogProductCard } from "./product-card";
 
+/** Fractional values show a peek of the next card on phones (hints at swiping). */
 const CAROUSEL_BREAKPOINTS = {
-	480: { slidesPerView: 2, spaceBetween: 16 },
+	480: { slidesPerView: 2.2, spaceBetween: 16 },
 	768: { slidesPerView: 3, spaceBetween: 20 },
 	1024: { slidesPerView: 4, spaceBetween: 24 },
 };
 
-/** Up to 4 products: responsive grid. More than 4: carousel. */
-export function ProductCollection({ products }: { products: Product[] }) {
+export function ProductCollection({
+	products,
+	layout,
+}: {
+	products: Product[];
+	layout: "carousel" | "grid";
+}) {
 	const cards = products.map((product) => (
 		<CatalogProductCard key={product.id} product={product} />
 	));
 
-	if (products.length > 4) {
+	if (layout === "carousel") {
 		return (
 			<Carousel.Root>
 				<Carousel.Viewport
 					pagination
+					slidesPerView={1.2}
 					breakpoints={CAROUSEL_BREAKPOINTS}
 					className="pb-10"
 					slideClassName="!h-auto"

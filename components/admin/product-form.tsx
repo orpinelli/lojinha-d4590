@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { GalleryHorizontalEnd } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
@@ -31,21 +32,28 @@ function toFormValues(product: Product | undefined, defaultCategoryId: string): 
 			images: [],
 			sizes: [],
 			details: { title: "Descrição do Produto", items: [] },
-			featured: false,
 			active: true,
-			position: 0,
 		};
 	}
-	const { id: _id, createdAt: _created, updatedAt: _updated, ...input } = product;
+	const {
+		id: _id,
+		position: _position,
+		createdAt: _created,
+		updatedAt: _updated,
+		...input
+	} = product;
 	return input;
 }
 
 export function ProductForm({
 	product,
 	categories,
+	showcaseTitles,
 }: {
 	product?: Product;
 	categories: { id: string; name: string }[];
+	/** Visible showcases where the product appears (edit mode). */
+	showcaseTitles?: string[];
 }) {
 	const router = useRouter();
 	const mutate = useAdminMutation();
@@ -148,17 +156,19 @@ export function ProductForm({
 							label="Visível na loja"
 							description="Desligue para esconder o produto sem excluir."
 						/>
-						<Field.Switch
-							name="featured"
-							label="Destaque"
-							description="Mostra o produto no carrossel do topo da página inicial."
-						/>
-						<Field.Number
-							name="position"
-							label="Ordem de exibição"
-							description="Números menores aparecem primeiro dentro da categoria."
-							className="sm:max-w-56"
-						/>
+						<p className="flex gap-2 rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">
+							<GalleryHorizontalEnd className="mt-0.5 size-4 shrink-0" aria-hidden />
+							<span>
+								{showcaseTitles === undefined
+									? "Depois de salvar, ele entra sozinho nas vitrines montadas pela categoria dele."
+									: showcaseTitles.length > 0
+										? `Aparece nas vitrines: ${showcaseTitles.join(", ")}.`
+										: "Ainda não está em nenhuma vitrine visível."}{" "}
+								<Link href="/gerenciamento/vitrines" className="font-medium text-foreground underline-offset-4 hover:underline">
+									Gerenciar vitrines
+								</Link>
+							</span>
+						</p>
 					</FormSection.Content>
 				</FormSection.Root>
 

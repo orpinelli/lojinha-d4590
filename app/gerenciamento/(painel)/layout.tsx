@@ -1,5 +1,13 @@
 import type React from "react";
-import { ExternalLink, FileText, LayoutDashboard, Package, Palette, Tags } from "lucide-react";
+import {
+	ExternalLink,
+	FileText,
+	GalleryHorizontalEnd,
+	LayoutDashboard,
+	Package,
+	Palette,
+	Tags,
+} from "lucide-react";
 import { LogoutButton } from "@/components/admin/actions";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { getSiteSettings } from "@/lib/server/queries";
@@ -16,6 +24,9 @@ export default async function AdminPanelLayout({ children }: { children: React.R
 				<AdminShell.Nav>
 					<AdminShell.NavLink href="/gerenciamento" exact icon={<LayoutDashboard />}>
 						Visão geral
+					</AdminShell.NavLink>
+					<AdminShell.NavLink href="/gerenciamento/vitrines" icon={<GalleryHorizontalEnd />}>
+						Vitrines
 					</AdminShell.NavLink>
 					<AdminShell.NavLink href="/gerenciamento/produtos" icon={<Package />}>
 						Produtos

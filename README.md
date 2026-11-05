@@ -1,8 +1,15 @@
 # Lojinha D4590
 
 Loja do Rotaract Distrito 4590 com painel de gerenciamento em `/gerenciamento`:
-produtos, imagens, preços, categorias, logo, cores, textos e contato são todos
-editáveis pelo painel.
+vitrines, produtos, imagens, preços, categorias, logo, cores, textos e contato
+são todos editáveis pelo painel.
+
+**Vitrines** são as seções da página inicial, uma embaixo da outra, na ordem
+definida arrastando no painel. Cada vitrine tem título, formato (Carrossel,
+Grade ou Destaque — no Destaque o título vira o selo dos cards) e conteúdo:
+produtos escolhidos à mão ou uma ou mais categorias juntas. A ordem dos
+produtos dentro da vitrine também é definida arrastando, e produtos de uma
+categoria podem ser ocultados só naquela vitrine.
 
 ## Rodando localmente
 
@@ -55,6 +62,10 @@ Components.
 | `PUT` `DELETE`   | `/api/products/:id`     | Admin                                                   |
 | `GET` / `POST`   | `/api/categories`       | Público / Admin                                         |
 | `PUT` `DELETE`   | `/api/categories/:id`   | Admin                                                   |
+| `PUT`            | `/api/categories/order` | Admin — `{ "ids": [...] }` na nova ordem                |
+| `GET` / `POST`   | `/api/showcases`        | Público (vitrines da home com produtos) / Admin. `?all=true` só admin |
+| `GET` `PUT` `DELETE` | `/api/showcases/:id` | Admin                                                  |
+| `PUT`            | `/api/showcases/order`  | Admin — `{ "ids": [...] }` na nova ordem da página      |
 | `GET` / `PATCH`  | `/api/settings`         | Público / Admin — corpo `{ "<seção>": { …completa } }`  |
 | `POST`           | `/api/uploads`          | Admin — `multipart/form-data`, campo `file`, até 5 MB   |
 | `POST`           | `/api/auth/login`       | `{ "email", "password" }`                               |

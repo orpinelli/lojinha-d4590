@@ -54,8 +54,9 @@ export const FormSection = {
 			{description && <p className="text-sm text-muted-foreground">{description}</p>}
 		</div>
 	),
+	// grid-cols-1 = minmax(0, 1fr): long unbreakable content can't widen the card.
 	Content: ({ className, ...props }: ComponentProps<"div">) => (
-		<div className={cn("grid gap-5 px-4 py-5 sm:px-6", className)} {...props} />
+		<div className={cn("grid grid-cols-1 gap-5 px-4 py-5 sm:px-6", className)} {...props} />
 	),
 	Footer: ({ className, ...props }: ComponentProps<"div">) => (
 		<div

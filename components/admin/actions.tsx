@@ -108,6 +108,11 @@ const DELETABLE = {
 		success: "Categoria excluída.",
 		remove: adminApi.deleteCategory,
 	},
+	showcase: {
+		title: "Excluir vitrine?",
+		success: "Vitrine excluída.",
+		remove: adminApi.deleteShowcase,
+	},
 } as const;
 
 /** Delete with confirmation for any admin resource. */

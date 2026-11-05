@@ -27,7 +27,6 @@ type ProductRow = {
 	sizes: string[];
 	details_title: string;
 	details_items: string[];
-	featured: boolean;
 	active: boolean;
 	position: number;
 	created_at: string;
@@ -36,7 +35,7 @@ type ProductRow = {
 
 const CATEGORY_COLUMNS = "id, name, position, created_at, updated_at";
 const PRODUCT_COLUMNS =
-	"id, category_id, name, description, price_in_cents, images, sizes, details_title, details_items, featured, active, position, created_at, updated_at";
+	"id, category_id, name, description, price_in_cents, images, sizes, details_title, details_items, active, position, created_at, updated_at";
 
 const toCategory = (row: CategoryRow): Category => ({
 	id: row.id,
@@ -46,10 +45,7 @@ const toCategory = (row: CategoryRow): Category => ({
 	updatedAt: row.updated_at,
 });
 
-const toCategoryRow = (input: CategoryInput) => ({
-	name: input.name,
-	position: input.position,
-});
+const toCategoryRow = (input: CategoryInput) => ({ name: input.name });
 
 const toProduct = (row: ProductRow): Product => ({
 	id: row.id,
@@ -60,7 +56,6 @@ const toProduct = (row: ProductRow): Product => ({
 	images: row.images,
 	sizes: row.sizes,
 	details: { title: row.details_title, items: row.details_items },
-	featured: row.featured,
 	active: row.active,
 	position: row.position,
 	createdAt: row.created_at,
@@ -76,9 +71,7 @@ const toProductRow = (input: ProductInput) => ({
 	sizes: input.sizes,
 	details_title: input.details.title,
 	details_items: input.details.items,
-	featured: input.featured,
 	active: input.active,
-	position: input.position,
 });
 
 type Result<T> = { data: T | null; error: { code?: string; message: string } | null };
@@ -116,9 +109,12 @@ export function createSupabaseCatalogRepositories(
 				);
 				return row ? toProduct(row) : null;
 			},
-			async create(input) {
+			async create(input, position) {
 				const row = unwrap<ProductRow>(
-					await products().insert(toProductRow(input)).select(PRODUCT_COLUMNS).single(),
+					await products()
+						.insert({ ...toProductRow(input), position })
+						.select(PRODUCT_COLUMNS)
+						.single(),
 				);
 				if (!row) throw new Error("Supabase: produto não retornado após inserir.");
 				return toProduct(row);
@@ -167,10 +163,10 @@ export function createSupabaseCatalogRepositories(
 				);
 				return row ? toCategory(row) : null;
 			},
-			async create(input) {
+			async create(input, position) {
 				const row = unwrap<CategoryRow>(
 					await categories()
-						.insert(toCategoryRow(input))
+						.insert({ ...toCategoryRow(input), position })
 						.select(CATEGORY_COLUMNS)
 						.single(),
 				);
@@ -192,6 +188,10 @@ export function createSupabaseCatalogRepositories(
 					await categories().delete().eq("id", id).select("id"),
 				);
 				return (rows?.length ?? 0) > 0;
+			},
+			async reorder(ids) {
+				// Single atomic UPDATE in Postgres (function runs with the caller's RLS).
+				unwrap(await client.rpc("reorder_categories", { ids }));
 			},
 		},
 	};

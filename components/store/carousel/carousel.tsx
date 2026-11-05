@@ -20,6 +20,9 @@ import "swiper/css/pagination";
 type CarouselContextValue = {
 	swiper: SwiperInstance | null;
 	setSwiper: (swiper: SwiperInstance) => void;
+	/** True when every slide fits on screen (nothing to slide). */
+	locked: boolean;
+	setLocked: (locked: boolean) => void;
 };
 
 const CarouselContext = createContext<CarouselContextValue | null>(null);
@@ -32,8 +35,9 @@ function useCarousel() {
 
 export function CarouselRoot({ className, ...props }: ComponentProps<"div">) {
 	const [swiper, setSwiper] = useState<SwiperInstance | null>(null);
+	const [locked, setLocked] = useState(false);
 	return (
-		<CarouselContext.Provider value={{ swiper, setSwiper }}>
+		<CarouselContext.Provider value={{ swiper, setSwiper, locked, setLocked }}>
 			<div className={cn("relative", className)} {...props} />
 		</CarouselContext.Provider>
 	);
@@ -55,6 +59,7 @@ export function CarouselViewport({
 	children: ReactNode;
 	className?: string;
 	slideClassName?: string;
+	/** Fractional values (e.g. 1.2) show part of the next slide. */
 	slidesPerView?: number;
 	spaceBetween?: number;
 	breakpoints?: SwiperOptions["breakpoints"];
@@ -63,13 +68,18 @@ export function CarouselViewport({
 	pagination?: boolean;
 	label?: string;
 }) {
-	const { setSwiper } = useCarousel();
+	const { setSwiper, setLocked } = useCarousel();
 	const slides = Children.toArray(children);
 
 	return (
 		<Swiper
 			modules={[Pagination, Autoplay]}
-			onSwiper={setSwiper}
+			onSwiper={(instance) => {
+				setSwiper(instance);
+				setLocked(instance.isLocked);
+			}}
+			onLock={() => setLocked(true)}
+			onUnlock={() => setLocked(false)}
 			slidesPerView={slidesPerView}
 			spaceBetween={spaceBetween}
 			breakpoints={breakpoints}
@@ -95,7 +105,8 @@ const arrowClass =
 	"absolute top-1/2 z-10 hidden -translate-y-1/2 items-center justify-center rounded-full bg-background p-2 shadow-lg transition-colors hover:bg-muted md:flex";
 
 export function CarouselPrevious({ className, ...props }: ComponentProps<"button">) {
-	const { swiper } = useCarousel();
+	const { swiper, locked } = useCarousel();
+	if (locked) return null;
 	return (
 		<button
 			type="button"
@@ -110,7 +121,8 @@ export function CarouselPrevious({ className, ...props }: ComponentProps<"button
 }
 
 export function CarouselNext({ className, ...props }: ComponentProps<"button">) {
-	const { swiper } = useCarousel();
+	const { swiper, locked } = useCarousel();
+	if (locked) return null;
 	return (
 		<button
 			type="button"

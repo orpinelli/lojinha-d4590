@@ -14,6 +14,8 @@ type PurchaseContextValue = {
 	product: Product;
 	quantity: number;
 	sizes: string[];
+	/** Incremented on every attempt to add with missing sizes. */
+	attention: number;
 	increase: () => void;
 	decrease: () => void;
 	setSize: (index: number, size: string) => void;
@@ -41,14 +43,17 @@ export function ProductPurchaseRoot({
 	const needsSize = requiresSize(product);
 	const [quantity, setQuantity] = useState(1);
 	const [sizes, setSizes] = useState<string[]>(needsSize ? [""] : []);
+	const [attention, setAttention] = useState(0);
 	const add = useAddToCart();
 
 	const value: PurchaseContextValue = {
 		product,
 		quantity,
 		sizes,
+		attention,
 		increase: () => {
 			setQuantity((current) => current + 1);
+			setAttention(0);
 			if (needsSize) setSizes((current) => [...current, ""]);
 		},
 		decrease: () => {
@@ -59,10 +64,11 @@ export function ProductPurchaseRoot({
 		setSize: (index, size) =>
 			setSizes((current) => current.map((value, i) => (i === index ? size : value))),
 		submit: () => {
-			add(
+			const added = add(
 				product,
 				needsSize ? sizes.map((size) => ({ size, quantity: 1 })) : [{ quantity }],
 			);
+			setAttention((current) => (added ? 0 : current + 1));
 		},
 	};
 
@@ -86,8 +92,9 @@ export function ProductPurchaseQuantity() {
 }
 
 export function ProductPurchaseSizes() {
-	const { product, quantity, sizes, setSize } = usePurchase();
+	const { product, quantity, sizes, setSize, attention } = usePurchase();
 	if (!requiresSize(product)) return null;
+	const firstMissing = sizes.findIndex((size) => !size);
 	return (
 		<div className="space-y-3 sm:space-y-4">
 			<span className={labelClass}>
@@ -105,10 +112,18 @@ export function ProductPurchaseSizes() {
 							onValueChange={(value) => setSize(index, value)}
 							label={`Tamanho do item ${index + 1}`}
 							triggerClassName="flex-1"
+							invalid={attention > 0 && !size}
+							attention={attention}
+							focusOnAttention={index === firstMissing}
 						/>
 					</div>
 				))}
 			</div>
+			{attention > 0 && firstMissing >= 0 && (
+				<p role="alert" className="text-sm font-medium text-destructive">
+					Escolha o tamanho de cada item.
+				</p>
+			)}
 		</div>
 	);
 }

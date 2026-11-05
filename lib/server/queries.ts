@@ -6,9 +6,8 @@ import { getStorefrontServices } from "./container";
 /** Memoized per request so layout + page share one read. */
 export const getSiteSettings = cache(() => getStorefrontServices().settings.get());
 
-export const getStorefront = cache(() =>
-	getStorefrontServices().catalog.getStorefront(),
-);
+/** Home page: visible showcases with their products, in page order. */
+export const getHomeShowcases = cache(() => getStorefrontServices().showcases.getHome());
 
 export const getPublicProduct = cache((id: string) =>
 	getStorefrontServices().catalog.getPublicProduct(id),

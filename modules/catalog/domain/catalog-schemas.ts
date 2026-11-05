@@ -4,16 +4,13 @@ import { assetUrlSchema } from "@/modules/shared/domain/validation";
 export const MAX_PRODUCT_IMAGES = 12;
 export const MAX_PRICE_IN_CENTS = 10_000_000;
 
+/** Order is not part of the input: it is defined by drag and drop (reorder). */
 export const categoryInputSchema = z.object({
 	name: z
 		.string()
 		.trim()
 		.min(1, "Informe o nome da categoria.")
 		.max(60, "Use no máximo 60 caracteres."),
-	position: z
-		.number({ error: "Informe um número." })
-		.int("Use um número inteiro.")
-		.min(0, "Use um número a partir de 0."),
 });
 
 export const productDetailsSchema = z.object({
@@ -49,24 +46,17 @@ export const productInputSchema = z.object({
 	sizes: z
 		.array(z.string().trim().min(1).max(10, "Tamanho muito longo."))
 		.max(20, "Use no máximo 20 tamanhos.")
-		.refine(
-			(sizes) => new Set(sizes).size === sizes.length,
-			"Há tamanhos repetidos.",
-		),
+		.refine((sizes) => new Set(sizes).size === sizes.length, "Há tamanhos repetidos."),
 	details: productDetailsSchema,
-	featured: z.boolean(),
 	active: z.boolean(),
-	position: z
-		.number({ error: "Informe um número." })
-		.int("Use um número inteiro.")
-		.min(0, "Use um número a partir de 0."),
 });
 
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
 export type ProductDetails = z.infer<typeof productDetailsSchema>;
 export type ProductInput = z.infer<typeof productInputSchema>;
 
-type Timestamps = { createdAt: string; updatedAt: string };
+/** Persisted entities: `position` is the default order (creation order or drag and drop). */
+type Persisted = { id: string; position: number; createdAt: string; updatedAt: string };
 
-export type Category = CategoryInput & Timestamps & { id: string };
-export type Product = ProductInput & Timestamps & { id: string };
+export type Category = CategoryInput & Persisted;
+export type Product = ProductInput & Persisted;

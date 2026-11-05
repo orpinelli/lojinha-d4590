@@ -3,8 +3,9 @@ import { createAuthService } from "@/modules/auth/application/auth-service";
 import { createCatalogService } from "@/modules/catalog/application/catalog-service";
 import { createMediaService } from "@/modules/media/application/media-service";
 import { createSettingsService } from "@/modules/settings/application/settings-service";
+import { createShowcaseService } from "@/modules/showcase/application/showcase-service";
 import { resolveDataProvider } from "@/lib/supabase/config";
-import { createProvider, type InfrastructureProvider } from "./providers";
+import { createProvider, type InfrastructureProvider, type PublicInfrastructure } from "./providers";
 
 /**
  * Composition root: the only place that knows which adapters are in use.
@@ -21,21 +22,24 @@ export function getDataProviderName() {
 	return getProvider().name;
 }
 
-/** Public, cookie-free services (storefront pages, public API reads). */
-export function getStorefrontServices() {
-	const { catalog, settings } = getProvider().publicData();
+function buildServices({ catalog, settings, showcases }: PublicInfrastructure) {
 	return {
 		catalog: createCatalogService(catalog),
 		settings: createSettingsService(settings),
+		showcases: createShowcaseService({ ...catalog, showcases }),
 	};
+}
+
+/** Public, cookie-free services (storefront pages, public API reads). */
+export function getStorefrontServices() {
+	return buildServices(getProvider().publicData());
 }
 
 /** Services bound to the current request (admin pages, mutations, auth). */
 export async function getRequestServices() {
 	const infrastructure = await getProvider().forRequest();
 	return {
-		catalog: createCatalogService(infrastructure.catalog),
-		settings: createSettingsService(infrastructure.settings),
+		...buildServices(infrastructure),
 		media: createMediaService(infrastructure.media),
 		auth: createAuthService(infrastructure.auth),
 	};

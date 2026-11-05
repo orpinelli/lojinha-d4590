@@ -14,13 +14,14 @@ type Props = { params: Promise<{ id: string }> };
 export default async function EditProductPage({ params }: Props) {
 	await requireAdminSession();
 	const { id } = await params;
-	const { catalog } = await getRequestServices();
-	const [product, categories] = await Promise.all([
+	const { catalog, showcases } = await getRequestServices();
+	const [product, categories, showcaseTitles] = await Promise.all([
 		catalog.getProduct(id).catch((error) => {
 			if (error instanceof NotFoundError) return null;
 			throw error;
 		}),
 		catalog.listCategories(),
+		showcases.titlesForProduct(id),
 	]);
 	if (!product) notFound();
 
@@ -49,7 +50,11 @@ export default async function EditProductPage({ params }: Props) {
 				</PageHeader.Actions>
 			</PageHeader.Root>
 
-			<ProductForm product={product} categories={categories.map(({ id, name }) => ({ id, name }))} />
+			<ProductForm
+				product={product}
+				categories={categories.map(({ id, name }) => ({ id, name }))}
+				showcaseTitles={showcaseTitles}
+			/>
 		</>
 	);
 }

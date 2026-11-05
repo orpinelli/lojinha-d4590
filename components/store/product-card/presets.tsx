@@ -22,12 +22,14 @@ export function CatalogProductCard({ product }: { product: Product }) {
 	);
 }
 
-/** "Mais vendido" highlight: same parts, editorial layout. */
+/** Highlight card: same parts, editorial layout; `badge` is the showcase title. */
 export function FeaturedProductCard({
 	product,
+	badge,
 	priority,
 }: {
 	product: Product;
+	badge?: string;
 	priority?: boolean;
 }) {
 	return (
@@ -43,7 +45,7 @@ export function FeaturedProductCard({
 					imageClassName="duration-700"
 				/>
 				<div className="relative flex min-w-0 flex-col justify-center bg-background p-6 sm:p-8 md:p-10 lg:p-12">
-					<ProductCard.FeaturedBadge className="absolute -top-3 left-4 sm:left-8" />
+					<ProductCard.FeaturedBadge label={badge} className="absolute -top-3 left-4 sm:left-8" />
 					<ProductCard.Title
 						linked={false}
 						className="mb-4 text-2xl font-light tracking-tight md:mb-6 md:text-3xl lg:text-4xl"

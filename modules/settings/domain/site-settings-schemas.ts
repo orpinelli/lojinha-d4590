@@ -32,8 +32,8 @@ export const heroSchema = z.object({
 	subtitle: text(300),
 });
 
+/** Highlight badges now come from each "Destaque" showcase title. */
 export const labelsSchema = z.object({
-	featured: text(30),
 	shipping: text(30),
 });
 

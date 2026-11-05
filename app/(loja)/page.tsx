@@ -1,27 +1,31 @@
-import { FeaturedProducts } from "@/components/store/featured-products";
-import { ProductCollection } from "@/components/store/product-collection";
-import { CategorySection, Hero, SiteFooter } from "@/components/store/sections";
+import { Hero, SiteFooter } from "@/components/store/sections";
+import { FeaturedShowcase, ShowcaseBlock } from "@/components/store/showcases";
 import { SiteHeader, type SiteNavItem } from "@/components/store/site-header";
-import { getSiteSettings, getStorefront } from "@/lib/server/queries";
+import { getHomeShowcases, getSiteSettings } from "@/lib/server/queries";
 import { slugify } from "@/modules/shared/domain/text";
 
-/** Unique, readable anchors per category (e.g. #vestuario). */
-function toNavItems(categories: { id: string; name: string }[]): SiteNavItem[] {
+/** Unique, readable anchors per showcase (e.g. #vestuario). */
+function toAnchors(showcases: { id: string; title: string }[]): Map<string, string> {
 	const used = new Set<string>();
-	return categories.map(({ id, name }) => {
-		let anchor = slugify(name) || `categoria-${id}`;
-		while (used.has(anchor)) anchor = `${anchor}-${id}`;
-		used.add(anchor);
-		return { id: anchor, label: name };
-	});
+	return new Map(
+		showcases.map(({ id, title }) => {
+			let anchor = slugify(title) || `vitrine-${id}`;
+			while (used.has(anchor)) anchor = `${anchor}-${slugify(id)}`;
+			used.add(anchor);
+			return [id, anchor];
+		}),
+	);
 }
 
 export default async function HomePage() {
-	const [{ sections, featured }, { branding, hero, contact, footer }] = await Promise.all([
-		getStorefront(),
+	const [showcases, { branding, hero, contact, footer }] = await Promise.all([
+		getHomeShowcases(),
 		getSiteSettings(),
 	]);
-	const navItems = toNavItems(sections.map((section) => section.category));
+	const anchors = toAnchors(showcases.map(({ showcase }) => showcase));
+	const navItems: SiteNavItem[] = showcases
+		.filter(({ showcase }) => showcase.layout !== "featured")
+		.map(({ showcase }) => ({ id: anchors.get(showcase.id) ?? showcase.id, label: showcase.title }));
 
 	return (
 		<div className="min-h-screen overflow-x-hidden bg-background">
@@ -46,16 +50,26 @@ export default async function HomePage() {
 					{hero.subtitle && <Hero.Subtitle>{hero.subtitle}</Hero.Subtitle>}
 				</Hero.Root>
 
-				<FeaturedProducts products={featured} />
+				{showcases.map(({ showcase, products }, index) =>
+					showcase.layout === "featured" ? (
+						<FeaturedShowcase
+							key={showcase.id}
+							title={showcase.title}
+							products={products}
+							priority={index === 0}
+						/>
+					) : (
+						<ShowcaseBlock
+							key={showcase.id}
+							anchor={anchors.get(showcase.id) ?? showcase.id}
+							title={showcase.title}
+							layout={showcase.layout}
+							products={products}
+						/>
+					),
+				)}
 
-				{sections.map(({ category, products }, index) => (
-					<CategorySection.Root key={category.id} id={navItems[index].id}>
-						<CategorySection.Title>{category.name}</CategorySection.Title>
-						<ProductCollection products={products} />
-					</CategorySection.Root>
-				))}
-
-				{sections.length === 0 && (
+				{showcases.length === 0 && (
 					<p className="px-4 py-16 text-center text-muted-foreground">
 						Nenhum produto disponível no momento.
 					</p>

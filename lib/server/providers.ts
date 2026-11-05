@@ -16,6 +16,9 @@ import { createSupabaseMediaStorage } from "@/modules/media/infrastructure/supab
 import type { SettingsRepository } from "@/modules/settings/domain/site-settings";
 import { createLocalSettingsRepository } from "@/modules/settings/infrastructure/local-settings-repository";
 import { createSupabaseSettingsRepository } from "@/modules/settings/infrastructure/supabase-settings-repository";
+import type { ShowcaseRepository } from "@/modules/showcase/domain/showcase";
+import { createLocalShowcaseRepository } from "@/modules/showcase/infrastructure/local-showcase-repository";
+import { createSupabaseShowcaseRepository } from "@/modules/showcase/infrastructure/supabase-showcase-repository";
 import { ConfigurationError } from "@/modules/shared/domain/errors";
 import {
 	readSupabaseConfig,
@@ -30,6 +33,7 @@ import {
 export type PublicInfrastructure = {
 	catalog: CatalogRepositories;
 	settings: SettingsRepository;
+	showcases: ShowcaseRepository;
 };
 
 export type RequestInfrastructure = PublicInfrastructure & {
@@ -70,6 +74,7 @@ export function createLocalProvider(): InfrastructureProvider {
 	const data: PublicInfrastructure = {
 		catalog: createLocalCatalogRepositories(path.join(root, "catalog.json")),
 		settings: createLocalSettingsRepository(path.join(root, "settings.json")),
+		showcases: createLocalShowcaseRepository(path.join(root, "showcases.json")),
 	};
 	const localMedia = createLocalMediaStorage(path.join(root, "uploads"));
 
@@ -92,6 +97,7 @@ export function createSupabaseProvider(config: SupabaseConfig): InfrastructurePr
 	const data: PublicInfrastructure = {
 		catalog: createSupabaseCatalogRepositories(publicClient),
 		settings: createSupabaseSettingsRepository(publicClient),
+		showcases: createSupabaseShowcaseRepository(publicClient),
 	};
 
 	return {
@@ -102,6 +108,7 @@ export function createSupabaseProvider(config: SupabaseConfig): InfrastructurePr
 			return {
 				catalog: createSupabaseCatalogRepositories(client),
 				settings: createSupabaseSettingsRepository(client),
+				showcases: createSupabaseShowcaseRepository(client),
 				media: createSupabaseMediaStorage(client),
 				auth: createSupabaseAuthGateway(client),
 			};

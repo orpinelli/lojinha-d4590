@@ -3,6 +3,7 @@ import {
 	NotFoundError,
 	ValidationError,
 } from "@/modules/shared/domain/errors";
+import { assertSameItems, nextPosition, reorderSchema } from "@/modules/shared/domain/ordering";
 import { parseInput } from "@/modules/shared/domain/validation";
 import {
 	categoryInputSchema,
@@ -12,19 +13,11 @@ import {
 } from "../domain/catalog-schemas";
 import type { CatalogRepositories } from "../domain/repositories";
 
-export type StorefrontSection = { category: Category; products: Product[] };
-export type Storefront = {
-	sections: StorefrontSection[];
-	featured: Product[];
-};
 export type CategoryWithCount = Category & { productCount: number };
 export type PublicProduct = { product: Product; category: Category | null };
 
 /** Catalog use cases. Every write validates untrusted input here. */
-export function createCatalogService({
-	products,
-	categories,
-}: CatalogRepositories) {
+export function createCatalogService({ products, categories }: CatalogRepositories) {
 	async function assertCategoryExists(categoryId: string) {
 		if (!(await categories.findById(categoryId))) {
 			throw new ValidationError("Confira os campos destacados.", {
@@ -34,30 +27,6 @@ export function createCatalogService({
 	}
 
 	return {
-		async getStorefront(): Promise<Storefront> {
-			const [allCategories, activeProducts] = await Promise.all([
-				categories.list(),
-				products.list({ onlyActive: true }),
-			]);
-			const sections = allCategories
-				.map((category) => ({
-					category,
-					products: activeProducts.filter(
-						(product) => product.categoryId === category.id,
-					),
-				}))
-				.filter((section) => section.products.length > 0);
-			const visibleIds = new Set(
-				sections.flatMap((section) => section.products.map((p) => p.id)),
-			);
-			return {
-				sections,
-				featured: activeProducts.filter(
-					(product) => product.featured && visibleIds.has(product.id),
-				),
-			};
-		},
-
 		async getPublicProduct(id: string): Promise<PublicProduct | null> {
 			const product = await products.findById(id);
 			if (!product || !product.active) return null;
@@ -71,7 +40,7 @@ export function createCatalogService({
 			return products.list();
 		},
 
-		async listActiveProducts(): Promise<Product[]> {
+		listActiveProducts(): Promise<Product[]> {
 			return products.list({ onlyActive: true });
 		},
 
@@ -84,7 +53,7 @@ export function createCatalogService({
 		async createProduct(rawInput: unknown): Promise<Product> {
 			const input = parseInput(productInputSchema, rawInput);
 			await assertCategoryExists(input.categoryId);
-			return products.create(input);
+			return products.create(input, nextPosition(await products.list()));
 		},
 
 		async updateProduct(id: string, rawInput: unknown): Promise<Product> {
@@ -112,17 +81,21 @@ export function createCatalogService({
 			}));
 		},
 
-		createCategory(rawInput: unknown): Promise<Category> {
-			return categories.create(parseInput(categoryInputSchema, rawInput));
+		async createCategory(rawInput: unknown): Promise<Category> {
+			const input = parseInput(categoryInputSchema, rawInput);
+			return categories.create(input, nextPosition(await categories.list()));
 		},
 
 		async updateCategory(id: string, rawInput: unknown): Promise<Category> {
-			const updated = await categories.update(
-				id,
-				parseInput(categoryInputSchema, rawInput),
-			);
+			const updated = await categories.update(id, parseInput(categoryInputSchema, rawInput));
 			if (!updated) throw new NotFoundError("Categoria não encontrada.");
 			return updated;
+		},
+
+		async reorderCategories(rawInput: unknown): Promise<void> {
+			const { ids } = parseInput(reorderSchema, rawInput);
+			assertSameItems(ids, (await categories.list()).map((category) => category.id));
+			await categories.reorder(ids);
 		},
 
 		async deleteCategory(id: string): Promise<void> {

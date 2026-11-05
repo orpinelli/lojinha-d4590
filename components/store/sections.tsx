@@ -48,7 +48,7 @@ export const Hero = {
 	Subtitle: HeroSubtitle,
 };
 
-function CategorySectionRoot({ className, children, ...props }: ComponentProps<"section">) {
+function ShowcaseSectionRoot({ className, children, ...props }: ComponentProps<"section">) {
 	return (
 		<section className={cn("scroll-mt-20 px-4 py-12 sm:px-6 sm:py-16 md:py-20", className)} {...props}>
 			<div className="mx-auto w-full max-w-7xl">{children}</div>
@@ -56,7 +56,7 @@ function CategorySectionRoot({ className, children, ...props }: ComponentProps<"
 	);
 }
 
-function CategorySectionTitle({ className, ...props }: ComponentProps<"h2">) {
+function ShowcaseSectionTitle({ className, ...props }: ComponentProps<"h2">) {
 	return (
 		<h2
 			className={cn(
@@ -68,9 +68,9 @@ function CategorySectionTitle({ className, ...props }: ComponentProps<"h2">) {
 	);
 }
 
-export const CategorySection = {
-	Root: CategorySectionRoot,
-	Title: CategorySectionTitle,
+export const ShowcaseSection = {
+	Root: ShowcaseSectionRoot,
+	Title: ShowcaseSectionTitle,
 };
 
 function FooterRoot({ className, children, ...props }: ComponentProps<"footer">) {

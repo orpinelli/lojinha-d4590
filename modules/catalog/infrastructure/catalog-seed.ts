@@ -43,7 +43,6 @@ export function catalogSeed(): CatalogData {
 					title: "Descrição do Produto",
 					items: ["Tecido: 100% algodão", "Modelagem unissex"],
 				},
-				featured: false,
 				active: true,
 				position: 0,
 			}),
@@ -60,7 +59,6 @@ export function catalogSeed(): CatalogData {
 					title: "Descrição do Produto",
 					items: ["Tecido: 100% algodão", "Modelagem unissex"],
 				},
-				featured: true,
 				active: true,
 				position: 1,
 			}),
@@ -77,9 +75,8 @@ export function catalogSeed(): CatalogData {
 					title: "Descrição do Produto",
 					items: ["Capacidade: 850mL", "Acabamento brilhante", "Impressão durável"],
 				},
-				featured: false,
 				active: true,
-				position: 0,
+				position: 2,
 			}),
 			product({
 				id: "4",
@@ -94,9 +91,8 @@ export function catalogSeed(): CatalogData {
 					title: "Descrição do Produto",
 					items: ["Largura: 25mm", "Comprimento total: ~90cm", "Mosquetão metálico"],
 				},
-				featured: false,
 				active: true,
-				position: 1,
+				position: 3,
 			}),
 			product({
 				id: "5",
@@ -108,9 +104,8 @@ export function catalogSeed(): CatalogData {
 				images: ["/produtos/tirante.jpg"],
 				sizes: [],
 				details: { title: "Descrição do Produto", items: ["Mosquetão metálico"] },
-				featured: false,
 				active: true,
-				position: 2,
+				position: 4,
 			}),
 			product({
 				id: "6",
@@ -125,9 +120,8 @@ export function catalogSeed(): CatalogData {
 					title: "Descrição do Produto",
 					items: ["Tamanho: 5x5cm", "Vinil resistente à água", "Adesivo de alta fixação"],
 				},
-				featured: false,
 				active: false,
-				position: 3,
+				position: 5,
 			}),
 			product({
 				id: "8",
@@ -142,9 +136,8 @@ export function catalogSeed(): CatalogData {
 				],
 				sizes: [],
 				details: { title: "O Kit Inclui", items: ["1x Caneca", "1x Tirante"] },
-				featured: false,
 				active: true,
-				position: 0,
+				position: 6,
 			}),
 			product({
 				id: "9",
@@ -164,9 +157,8 @@ export function catalogSeed(): CatalogData {
 					title: "O Kit Inclui",
 					items: ["1x Caneca", "1x Tirante", "1x Pin"],
 				},
-				featured: false,
 				active: true,
-				position: 1,
+				position: 7,
 			}),
 			product({
 				id: "10",
@@ -192,10 +184,37 @@ export function catalogSeed(): CatalogData {
 						"1x Pin",
 					],
 				},
-				featured: false,
 				active: true,
-				position: 2,
+				position: 8,
 			}),
 		],
+	};
+}
+
+/** Keeps only known fields (files saved by older versions may have extra ones). */
+export function normalizeCatalog(raw: unknown): CatalogData {
+	const data = (raw ?? {}) as Partial<Record<keyof CatalogData, Record<string, unknown>[]>>;
+	return {
+		categories: (data.categories ?? []).map((item, index) => ({
+			id: String(item.id),
+			name: String(item.name),
+			position: typeof item.position === "number" ? item.position : index,
+			createdAt: String(item.createdAt ?? SEEDED_AT),
+			updatedAt: String(item.updatedAt ?? SEEDED_AT),
+		})),
+		products: (data.products ?? []).map((item, index) => ({
+			id: String(item.id),
+			categoryId: String(item.categoryId),
+			name: String(item.name),
+			description: String(item.description ?? ""),
+			priceInCents: Number(item.priceInCents),
+			images: (item.images as string[]) ?? [],
+			sizes: (item.sizes as string[]) ?? [],
+			details: (item.details as Product["details"]) ?? { title: "", items: [] },
+			active: item.active !== false,
+			position: typeof item.position === "number" ? item.position : index,
+			createdAt: String(item.createdAt ?? SEEDED_AT),
+			updatedAt: String(item.updatedAt ?? SEEDED_AT),
+		})),
 	};
 }

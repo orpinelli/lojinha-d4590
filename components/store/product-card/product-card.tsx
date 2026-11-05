@@ -29,6 +29,8 @@ type ProductCardContextValue = {
 	product: Product;
 	size: string;
 	setSize: (size: string) => void;
+	/** Incremented on every attempt to add without a size (drives the highlight). */
+	sizeAttention: number;
 	addToCart: () => void;
 };
 
@@ -48,13 +50,19 @@ export function ProductCardRoot({
 	...props
 }: ComponentProps<typeof Card> & { product: Product }) {
 	const [size, setSize] = useState("");
+	const [sizeAttention, setSizeAttention] = useState(0);
 	const add = useAddToCart();
 	const addToCart = useCallback(() => {
-		if (add(product, [{ size, quantity: 1 }])) setSize("");
+		if (add(product, [{ size, quantity: 1 }])) {
+			setSize("");
+			setSizeAttention(0);
+		} else if (requiresSize(product) && !size) {
+			setSizeAttention((current) => current + 1);
+		}
 	}, [add, product, size]);
 	const value = useMemo(
-		() => ({ product, size, setSize, addToCart }),
-		[product, size, addToCart],
+		() => ({ product, size, setSize, sizeAttention, addToCart }),
+		[product, size, sizeAttention, addToCart],
 	);
 
 	return (
@@ -154,8 +162,9 @@ export function ProductCardSizePicker({
 	triggerClassName?: string;
 	placeholder?: string;
 }) {
-	const { product, size, setSize } = useProductCard();
+	const { product, size, setSize, sizeAttention } = useProductCard();
 	if (!requiresSize(product)) return null;
+	const invalid = sizeAttention > 0 && !size;
 	return (
 		<div className={className}>
 			<SizeSelect
@@ -164,9 +173,21 @@ export function ProductCardSizePicker({
 				onValueChange={setSize}
 				placeholder={placeholder}
 				triggerClassName={triggerClassName}
+				invalid={invalid}
+				attention={sizeAttention}
 			/>
+			{invalid && (
+				<p role="alert" className="mt-1.5 text-xs font-medium text-destructive">
+					Escolha um tamanho
+				</p>
+			)}
 		</div>
 	);
+}
+
+/** Seal shown on highlight cards (text = title of the "Destaque" showcase). */
+export function ProductCardFeaturedBadge(props: { label?: string; className?: string }) {
+	return <FeaturedBadge {...props} />;
 }
 
 export function ProductCardAddButton({
@@ -213,4 +234,4 @@ export function ProductCardDetailsLink({
 	);
 }
 
-export { FeaturedBadge as ProductCardFeaturedBadge, ShippingBadge as ProductCardShippingBadge };
+export { ShippingBadge as ProductCardShippingBadge };

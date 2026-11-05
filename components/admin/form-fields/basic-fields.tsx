@@ -169,6 +169,69 @@ export function SwitchField({ name, label, description, className }: BaseFieldPr
 	);
 }
 
+export type ChoiceOption = {
+	value: string;
+	label: string;
+	description?: string;
+	icon?: React.ReactNode;
+};
+
+/** Radio cards (native radios: keyboard and screen readers work out of the box). */
+export function ChoiceField({
+	name,
+	label,
+	description,
+	className,
+	options,
+	onValueChange,
+}: BaseFieldProps & { options: ChoiceOption[]; onValueChange?: (value: string) => void }) {
+	const { control } = useFormContext();
+	return (
+		<FormField
+			control={control}
+			name={name}
+			render={({ field }) => (
+				<FieldFrame label={label} description={description} className={className} asControl={false}>
+					<div
+						role="radiogroup"
+						aria-label={label}
+						className={cn("grid gap-3", options.length > 2 ? "sm:grid-cols-3" : "sm:grid-cols-2")}
+					>
+						{options.map((option) => (
+							<label
+								key={option.value}
+								className="flex cursor-pointer items-start gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary/60 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/40"
+							>
+								<input
+									type="radio"
+									name={field.name}
+									value={option.value}
+									checked={field.value === option.value}
+									onChange={() => {
+										field.onChange(option.value);
+										onValueChange?.(option.value);
+									}}
+									onBlur={field.onBlur}
+									className="mt-0.5 size-4 shrink-0 accent-primary"
+								/>
+								<span className="min-w-0">
+									<span className="flex items-center gap-2 text-sm font-medium [&_svg]:size-4 [&_svg]:text-muted-foreground">
+										{option.icon}
+										{option.label}
+									</span>
+									{option.description && (
+										<span className="mt-1 block text-sm text-muted-foreground">{option.description}</span>
+									)}
+								</span>
+							</label>
+						))}
+					</div>
+				</FieldFrame>
+			)}
+		/>
+	);
+}
+
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 export function ColorField({ name, label, description, className }: BaseFieldProps) {
