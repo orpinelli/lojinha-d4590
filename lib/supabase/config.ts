@@ -1,6 +1,17 @@
 export type SupabaseConfig = { url: string; key: string };
 export type DataProviderName = "local" | "supabase";
 
+/**
+ * The browser never talks to Supabase directly (everything goes through our
+ * server), so the session cookie can be HttpOnly: an XSS can't steal it.
+ */
+export const SUPABASE_COOKIE_OPTIONS = {
+	httpOnly: true,
+	secure: process.env.NODE_ENV === "production",
+	sameSite: "lax",
+	path: "/",
+} as const;
+
 /** Server-only env. The publishable (anon) key is safe for RLS-protected use. */
 export function readSupabaseConfig(): SupabaseConfig | null {
 	const url = process.env.SUPABASE_URL?.trim();

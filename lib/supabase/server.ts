@@ -2,12 +2,13 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import type { SupabaseConfig } from "./config";
+import { SUPABASE_COOKIE_OPTIONS, type SupabaseConfig } from "./config";
 
 /** Client bound to the visitor's auth cookies (RLS sees the logged-in user). */
 export async function createSupabaseSessionClient({ url, key }: SupabaseConfig) {
 	const cookieStore = await cookies();
 	return createServerClient(url, key, {
+		cookieOptions: SUPABASE_COOKIE_OPTIONS,
 		cookies: {
 			getAll: () => cookieStore.getAll(),
 			setAll(cookiesToSet) {

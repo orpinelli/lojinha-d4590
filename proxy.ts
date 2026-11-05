@@ -4,7 +4,11 @@ import {
 	LOCAL_SESSION_COOKIE,
 	verifyLocalSessionToken,
 } from "@/modules/auth/infrastructure/local-session-token";
-import { readSupabaseConfig, resolveDataProvider } from "@/lib/supabase/config";
+import {
+	SUPABASE_COOKIE_OPTIONS,
+	readSupabaseConfig,
+	resolveDataProvider,
+} from "@/lib/supabase/config";
 
 const LOGIN_PATH = "/gerenciamento/login";
 
@@ -22,6 +26,7 @@ export async function proxy(request: NextRequest) {
 			const config = readSupabaseConfig();
 			if (config) {
 				const supabase = createServerClient(config.url, config.key, {
+					cookieOptions: SUPABASE_COOKIE_OPTIONS,
 					cookies: {
 						getAll: () => request.cookies.getAll(),
 						setAll(cookiesToSet, headers) {
