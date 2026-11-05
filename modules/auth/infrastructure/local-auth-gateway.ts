@@ -56,5 +56,11 @@ export function createLocalAuthGateway(cookies: CookieJar): AdminAuthGateway {
 			const token = cookies.get(LOCAL_SESSION_COOKIE);
 			return token ? verifyLocalSessionToken(token) : null;
 		},
+
+		async changePassword() {
+			throw new ConfigurationError(
+				"No modo local a senha é a variável ADMIN_PASSWORD do .env.local.",
+			);
+		},
 	};
 }

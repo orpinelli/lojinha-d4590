@@ -70,6 +70,7 @@ Components.
 | `POST`           | `/api/uploads`          | Admin — `multipart/form-data`, campo `file`, até 5 MB   |
 | `POST`           | `/api/auth/login`       | `{ "email", "password" }`                               |
 | `POST`           | `/api/auth/logout`      | —                                                       |
+| `POST`           | `/api/auth/password`    | Admin — `{ currentPassword, newPassword, confirmPassword }` |
 
 Respostas: `{ "data": … }` ou `{ "error": { "code", "message", "fieldErrors"? } }`.
 Seções de configuração: `branding`, `theme`, `hero`, `labels`, `contact`, `footer`.
@@ -94,4 +95,5 @@ Seções de configuração: `branding`, `theme`, `hero`, `labels`, `contact`, `f
 - CSRF: cookie `SameSite=Lax` + checagem de `Origin` + corpo JSON obrigatório.
 - Uploads: formato verificado pelos bytes do arquivo (SVG bloqueado), até 5 MB.
 - Cabeçalhos: CSP, `X-Frame-Options: DENY`, HSTS, `nosniff`, `Referrer-Policy`.
-- Login com limite de tentativas (por IP e global).
+- Login com limite de tentativas (por IP e global); cookie de sessão `HttpOnly`.
+- Troca de senha em `/gerenciamento/conta` (exige a senha atual).

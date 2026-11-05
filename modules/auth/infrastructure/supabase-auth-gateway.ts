@@ -1,9 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { RateLimitError, UnauthorizedError } from "@/modules/shared/domain/errors";
+import {
+	RateLimitError,
+	UnauthorizedError,
+	ValidationError,
+} from "@/modules/shared/domain/errors";
 import { toDomainError } from "@/modules/shared/infrastructure/supabase-errors";
 import {
 	INVALID_CREDENTIALS_MESSAGE,
+	WRONG_CURRENT_PASSWORD_MESSAGE,
 	type AdminAuthGateway,
 	type AdminSession,
 } from "../domain/auth";
@@ -52,6 +57,28 @@ export function createSupabaseAuthGateway(client: SupabaseClient): AdminAuthGate
 			if (error || !data.user) return null;
 			if (!(await isAdmin(data.user.id))) return null;
 			return { userId: data.user.id, email: data.user.email ?? "" };
+		},
+
+		async changePassword({ currentPassword, newPassword }) {
+			const { data } = await client.auth.getUser();
+			if (!data.user?.email || !(await isAdmin(data.user.id))) throw new UnauthorizedError();
+			// Proves the person at the keyboard knows the password (not just the cookie).
+			const check = await client.auth.signInWithPassword({
+				email: data.user.email,
+				password: currentPassword,
+			});
+			if (check.error?.status === 429) throw new RateLimitError();
+			if (check.error) {
+				throw new ValidationError(WRONG_CURRENT_PASSWORD_MESSAGE, {
+					currentPassword: [WRONG_CURRENT_PASSWORD_MESSAGE],
+				});
+			}
+			const { error } = await client.auth.updateUser({ password: newPassword });
+			if (error) {
+				const message =
+					error.status === 422 ? "Senha fraca ou já usada. Escolha outra." : error.message;
+				throw new ValidationError(message, { newPassword: [message] });
+			}
 		},
 	};
 }

@@ -7,6 +7,7 @@ import {
 	Package,
 	Palette,
 	Tags,
+	UserRound,
 } from "lucide-react";
 import { LogoutButton } from "@/components/admin/actions";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -43,6 +44,9 @@ export default async function AdminPanelLayout({ children }: { children: React.R
 				</AdminShell.Nav>
 				<AdminShell.SidebarFooter>
 					<AdminShell.User email={session.email} />
+					<AdminShell.NavLink href="/gerenciamento/conta" icon={<UserRound />}>
+						Minha conta
+					</AdminShell.NavLink>
 					<AdminShell.ExternalLink href="/" icon={<ExternalLink />}>
 						Ver loja
 					</AdminShell.ExternalLink>

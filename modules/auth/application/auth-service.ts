@@ -1,6 +1,6 @@
 import { parseInput } from "@/modules/shared/domain/validation";
 import type { AdminAuthGateway, AdminSession } from "../domain/auth";
-import { credentialsSchema } from "../domain/auth-schemas";
+import { credentialsSchema, passwordChangeSchema } from "../domain/auth-schemas";
 
 export function createAuthService(gateway: AdminAuthGateway) {
 	return {
@@ -14,6 +14,11 @@ export function createAuthService(gateway: AdminAuthGateway) {
 
 		currentSession(): Promise<AdminSession | null> {
 			return gateway.currentSession();
+		},
+
+		changePassword(rawInput: unknown): Promise<void> {
+			const { currentPassword, newPassword } = parseInput(passwordChangeSchema, rawInput);
+			return gateway.changePassword({ currentPassword, newPassword });
 		},
 	};
 }

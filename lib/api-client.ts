@@ -64,6 +64,8 @@ export const adminApi = {
 	login: (credentials: { email: string; password: string }) =>
 		request<{ email: string }>("/api/auth/login", json("POST", credentials)),
 	logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+	changePassword: (input: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+		request<void>("/api/auth/password", json("POST", input)),
 
 	createProduct: (input: ProductInput) =>
 		request<Product>("/api/products", json("POST", input)),
