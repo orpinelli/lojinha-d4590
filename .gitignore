@@ -18,6 +18,10 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+
+# local data provider (DATA_PROVIDER=local)
+/.storage/
 
 # vercel
 .vercel

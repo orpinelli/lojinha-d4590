@@ -1,46 +1,43 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
-import { Analytics } from "@vercel/analytics/next"
-import { Suspense } from "react"
-import { CartProvider } from "@/contexts/cart-context"
-import { CartSidebar } from "@/components/cart-sidebar"
-import "./globals.css"
+import type React from "react";
+import type { Metadata, Viewport } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import { Analytics } from "@vercel/analytics/next";
+import { ThemeStyle } from "@/components/theme-style";
+import { ToastProvider } from "@/components/ui/toast";
+import { getSiteSettings } from "@/lib/server/queries";
+import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "Loja D4590",
-  description: "Loja de produtos do Distrito D4590",
-  icons: {
-    icon: "/logo.png",
-  },
+export async function generateMetadata(): Promise<Metadata> {
+	const { branding } = await getSiteSettings();
+	return {
+		title: { default: branding.storeName, template: `%s | ${branding.storeName}` },
+		description: branding.description,
+		icons: { icon: branding.faviconUrl },
+	};
 }
 
-export default function RootLayout({
-  children,
+export async function generateViewport(): Promise<Viewport> {
+	const { theme } = await getSiteSettings();
+	return { width: "device-width", initialScale: 1, themeColor: theme.background };
+}
+
+export default async function RootLayout({
+	children,
 }: Readonly<{
-  children: React.ReactNode
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <CartProvider>
-          <Suspense
-            fallback={
-              <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d41367] mx-auto mb-4"></div>
-                  <p className="text-gray-600 font-light">Carregando...</p>
-                </div>
-              </div>
-            }
-          >
-            {children}
-          </Suspense>
-          <CartSidebar />
-        </CartProvider>
-        <Analytics />
-      </body>
-    </html>
-  )
+	const { theme } = await getSiteSettings();
+
+	return (
+		<html lang="pt-BR">
+			<head>
+				<ThemeStyle theme={theme} />
+			</head>
+			<body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+				<ToastProvider>{children}</ToastProvider>
+				<Analytics />
+			</body>
+		</html>
+	);
 }
