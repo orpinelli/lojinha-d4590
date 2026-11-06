@@ -68,7 +68,7 @@ export function CategoryDialog({
 						<Field.Text name="name" label="Nome" placeholder="Ex.: Camisetas" maxLength={60} />
 						<DialogFooter>
 							<DialogClose asChild>
-								<Button type="button" variant="outline" className="h-10 hover:bg-muted hover:text-foreground">
+								<Button type="button" variant="outline">
 									Cancelar
 								</Button>
 							</DialogClose>

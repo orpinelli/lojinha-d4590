@@ -27,6 +27,22 @@ export default async function ContentPage() {
 							<Field.Text name="highlight" label="Destaque (na cor principal)" maxLength={60} />
 						</div>
 						<Field.Textarea name="subtitle" label="Subtítulo" />
+						<div className="grid gap-5 sm:grid-cols-2">
+							<Field.Text
+								name="primaryCta"
+								label="Botão principal"
+								description="Leva até os produtos. Em branco, some."
+								placeholder="Ver produtos"
+								maxLength={30}
+							/>
+							<Field.Text
+								name="secondaryCta"
+								label="Botão secundário"
+								description="Abre o WhatsApp da loja. Em branco, some."
+								placeholder="Falar no WhatsApp"
+								maxLength={30}
+							/>
+						</div>
 					</SettingsForm.Content>
 					<SettingsForm.Submit />
 				</SettingsForm.Root>

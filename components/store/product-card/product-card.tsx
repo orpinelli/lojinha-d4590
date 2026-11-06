@@ -11,11 +11,11 @@ import {
 	type ComponentProps,
 	type ReactNode,
 } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Price } from "@/components/store/price";
 import { SizeSelect } from "@/components/store/size-select";
 import { FeaturedBadge, ShippingBadge } from "@/components/store/store-badges";
+import { Button } from "@/components/ui/button";
 import { useAddToCart } from "@/hooks/use-add-to-cart";
 import { cn } from "@/lib/utils";
 import {
@@ -69,7 +69,8 @@ export function ProductCardRoot({
 		<ProductCardContext.Provider value={value}>
 			<Card
 				className={cn(
-					"group overflow-hidden rounded-lg bg-background transition-all duration-300",
+					"group gap-0 overflow-hidden rounded-2xl border-2 bg-background py-0 shadow-none",
+					"transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] motion-reduce:hover:translate-y-0",
 					className,
 				)}
 				{...props}
@@ -95,17 +96,14 @@ export function ProductCardMedia({
 }) {
 	const { product } = useProductCard();
 	const media = (
-		<div className={cn("relative aspect-square w-full bg-muted", className)}>
+		<div className={cn("relative aspect-square w-full overflow-hidden bg-muted", className)}>
 			<Image
 				src={productCover(product)}
 				alt={product.name}
 				fill
 				sizes={sizes}
 				priority={priority}
-				className={cn(
-					"object-cover transition-transform duration-300 group-hover:scale-105",
-					imageClassName,
-				)}
+				className={cn("object-cover", imageClassName)}
 			/>
 		</div>
 	);
@@ -118,11 +116,13 @@ export function ProductCardMedia({
 }
 
 export function ProductCardBody({ className, ...props }: ComponentProps<"div">) {
+	return <div className={cn("flex flex-1 flex-col gap-1.5 p-4", className)} {...props} />;
+}
+
+/** Bottom area separated by a border (size picker + action). */
+export function ProductCardFooter({ className, ...props }: ComponentProps<"div">) {
 	return (
-		<div
-			className={cn("flex flex-1 flex-col justify-between bg-background p-4 sm:p-5", className)}
-			{...props}
-		/>
+		<div className={cn("flex flex-col gap-3 border-t-2 px-4 pt-3 pb-4", className)} {...props} />
 	);
 }
 
@@ -135,11 +135,17 @@ export function ProductCardTitle({
 }) {
 	const { product } = useProductCard();
 	const title = (
-		<h3 className={cn("break-words text-foreground transition-colors", className)}>
+		<h3 className={cn("font-bold break-words text-foreground transition-colors", className)}>
 			{product.name}
 		</h3>
 	);
-	return linked ? <Link href={productPath(product)}>{title}</Link> : title;
+	return linked ? (
+		<Link href={productPath(product)} className="hover:text-primary">
+			{title}
+		</Link>
+	) : (
+		title
+	);
 }
 
 export function ProductCardDescription({ className }: { className?: string }) {
@@ -150,7 +156,7 @@ export function ProductCardDescription({ className }: { className?: string }) {
 
 export function ProductCardPrice({ className }: { className?: string }) {
 	const { product } = useProductCard();
-	return <Price cents={product.priceInCents} className={className} />;
+	return <Price cents={product.priceInCents} className={cn("font-display", className)} />;
 }
 
 export function ProductCardSizePicker({
@@ -177,7 +183,7 @@ export function ProductCardSizePicker({
 				attention={sizeAttention}
 			/>
 			{invalid && (
-				<p role="alert" className="mt-1.5 text-xs font-medium text-destructive">
+				<p role="alert" className="mt-1.5 text-xs font-bold text-destructive">
 					Escolha um tamanho
 				</p>
 			)}
@@ -185,28 +191,18 @@ export function ProductCardSizePicker({
 	);
 }
 
-/** Seal shown on highlight cards (text = title of the "Destaque" showcase). */
-export function ProductCardFeaturedBadge(props: { label?: string; className?: string }) {
-	return <FeaturedBadge {...props} />;
-}
-
 export function ProductCardAddButton({
 	className,
+	size = "sm",
 	children = "Adicionar",
 }: {
 	className?: string;
+	size?: "sm" | "md";
 	children?: ReactNode;
 }) {
 	const { addToCart } = useProductCard();
 	return (
-		<Button
-			type="button"
-			onClick={addToCart}
-			className={cn(
-				"h-auto min-h-9 w-full whitespace-normal bg-primary tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:bg-primary-hover",
-				className,
-			)}
-		>
+		<Button block size={size === "md" ? "lg" : "sm"} onClick={addToCart} className={className}>
 			{children}
 		</Button>
 	);
@@ -214,24 +210,24 @@ export function ProductCardAddButton({
 
 export function ProductCardDetailsLink({
 	className,
-	children = "Ver Detalhes",
+	size = "md",
+	children = "Ver detalhes",
 }: {
 	className?: string;
+	size?: "sm" | "md";
 	children?: ReactNode;
 }) {
 	const { product } = useProductCard();
 	return (
-		<Button
-			asChild
-			variant="outline"
-			className={cn(
-				"h-auto min-h-9 w-full whitespace-normal border-foreground text-sm font-light tracking-wide text-foreground uppercase transition-all duration-300 hover:bg-foreground hover:text-background",
-				className,
-			)}
-		>
+		<Button asChild block variant="secondary" size={size === "md" ? "lg" : "sm"} className={className}>
 			<Link href={productPath(product)}>{children}</Link>
 		</Button>
 	);
+}
+
+/** Seal shown on highlight cards (text = title of the "Destaque" showcase). */
+export function ProductCardFeaturedBadge(props: { label?: string; className?: string }) {
+	return <FeaturedBadge {...props} />;
 }
 
 export { ShippingBadge as ProductCardShippingBadge };

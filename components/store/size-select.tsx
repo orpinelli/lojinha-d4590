@@ -67,9 +67,8 @@ export function SizeSelect({
 				aria-label={label}
 				aria-invalid={invalid || undefined}
 				className={cn(
-					"w-full transition-colors",
 					invalid &&
-						"border-destructive bg-destructive/5 text-destructive [&_svg]:text-destructive [&_svg]:opacity-100",
+						"border-destructive bg-destructive/5 text-destructive data-[placeholder]:text-destructive [&_svg]:text-destructive [&_svg]:opacity-100",
 					triggerClassName,
 				)}
 			>

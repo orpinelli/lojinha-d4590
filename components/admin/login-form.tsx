@@ -41,7 +41,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 				{formError && (
 					<div
 						role="alert"
-						className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+						className="rounded-xl border-2 border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive"
 					>
 						{formError}
 					</div>

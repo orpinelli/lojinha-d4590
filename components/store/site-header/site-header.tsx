@@ -10,9 +10,9 @@ import {
 	useState,
 	type ComponentProps,
 	type MouseEvent,
+	type ReactNode,
 } from "react";
 import { ArrowLeft, Menu, ShoppingCart, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/cart-context";
 import { useSiteSettings } from "@/contexts/site-settings-context";
@@ -41,7 +41,7 @@ export function SiteHeaderRoot({
 }: {
 	position?: "fixed" | "sticky";
 	className?: string;
-	children: React.ReactNode;
+	children: ReactNode;
 }) {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const menuId = useId();
@@ -50,35 +50,38 @@ export function SiteHeaderRoot({
 		<SiteHeaderContext.Provider value={{ menuOpen, setMenuOpen, menuId }}>
 			<header
 				className={cn(
-					"top-0 z-40 border-b",
-					position === "fixed"
-						? "fixed inset-x-0 bg-background/95 backdrop-blur-sm"
-						: "sticky bg-background",
+					"top-0 z-40 border-b-2 bg-background",
+					position === "fixed" ? "fixed inset-x-0" : "sticky",
 					className,
 				)}
 			>
-				<div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">{children}</div>
+				<div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10">{children}</div>
 			</header>
 		</SiteHeaderContext.Provider>
 	);
 }
 
 export function SiteHeaderBar({ className, ...props }: ComponentProps<"div">) {
-	return <div className={cn("flex items-center justify-between gap-2", className)} {...props} />;
+	return <div className={cn("flex h-16 items-center justify-between gap-3", className)} {...props} />;
 }
 
-export function SiteHeaderBrand({ size = "md" }: { size?: "md" | "sm" }) {
+/** Logo + divider + store name label (label hidden on small phones). */
+export function SiteHeaderBrand() {
 	const { branding } = useSiteSettings();
 	return (
-		<Link href="/" className="flex min-w-0 shrink items-center" aria-label={`${branding.storeName} — início`}>
+		<Link href="/" className="flex min-w-0 items-center gap-3" aria-label={`${branding.storeName} — início`}>
 			<Image
 				src={branding.logoUrl}
-				alt={branding.storeName}
-				width={160}
-				height={54}
+				alt=""
+				width={140}
+				height={33}
 				priority
-				className={cn("w-auto max-w-[45vw] object-contain", size === "md" ? "h-10 sm:h-12" : "h-8 sm:h-10")}
+				className="h-8 w-auto max-w-[120px] object-contain sm:max-w-[140px]"
 			/>
+			<span aria-hidden className="hidden h-6 w-px shrink-0 bg-border sm:block" />
+			<span aria-hidden className="hidden truncate text-[11px] font-bold tracking-[1.5px] text-label uppercase sm:block">
+				{branding.storeName}
+			</span>
 		</Link>
 	);
 }
@@ -98,7 +101,7 @@ function SectionLink({ item, className }: { item: SiteNavItem; className?: strin
 			href={`#${item.id}`}
 			onClick={onClick}
 			className={cn(
-				"font-light tracking-wide text-foreground uppercase transition-colors hover:text-primary",
+				"rounded-lg px-3 py-2 text-[13px] font-bold tracking-[0.5px] text-label uppercase transition-colors hover:bg-primary/10 hover:text-primary",
 				className,
 			)}
 		>
@@ -110,9 +113,9 @@ function SectionLink({ item, className }: { item: SiteNavItem; className?: strin
 export function SiteHeaderNav({ items }: { items: SiteNavItem[] }) {
 	if (items.length === 0) return null;
 	return (
-		<nav aria-label="Categorias" className="hidden items-center gap-6 md:flex lg:gap-12">
+		<nav aria-label="Vitrines" className="hidden items-center gap-1 min-[900px]:flex">
 			{items.map((item) => (
-				<SectionLink key={item.id} item={item} className="text-xs lg:text-sm" />
+				<SectionLink key={item.id} item={item} />
 			))}
 		</nav>
 	);
@@ -122,34 +125,37 @@ export function SiteHeaderMobileNav({ items }: { items: SiteNavItem[] }) {
 	const { menuOpen, menuId } = useSiteHeader();
 	if (!menuOpen || items.length === 0) return null;
 	return (
-		<nav id={menuId} aria-label="Categorias" className="mt-4 border-t pt-2 pb-2 md:hidden">
+		<nav id={menuId} aria-label="Vitrines" className="flex flex-col border-t-2 py-2 min-[900px]:hidden">
 			{items.map((item) => (
-				<SectionLink key={item.id} item={item} className="block w-full py-3 text-left text-sm" />
+				<SectionLink key={item.id} item={item} className="px-2 py-3 text-sm" />
 			))}
 		</nav>
 	);
 }
 
 export function SiteHeaderActions({ className, ...props }: ComponentProps<"div">) {
-	return <div className={cn("flex shrink-0 items-center gap-1 sm:gap-3", className)} {...props} />;
+	return <div className={cn("flex shrink-0 items-center gap-1", className)} {...props} />;
 }
+
+const iconButton =
+	"relative flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-primary/10 hover:text-primary";
 
 export function SiteHeaderCartButton() {
 	const { count, openCart } = useCart();
 	return (
-		<Button
-			variant="ghost"
+		<button
+			type="button"
 			onClick={openCart}
 			aria-label={count > 0 ? `Abrir carrinho (${count} itens)` : "Abrir carrinho"}
-			className="relative size-10 p-0 hover:bg-muted"
+			className={iconButton}
 		>
-			<ShoppingCart className="size-5 text-foreground" />
+			<ShoppingCart className="size-5" strokeWidth={2.5} />
 			{count > 0 && (
-				<Badge className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
+				<span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[10px] font-extrabold text-primary-foreground">
 					{count}
-				</Badge>
+				</span>
 			)}
-		</Button>
+		</button>
 	);
 }
 
@@ -157,16 +163,16 @@ export function SiteHeaderMenuToggle({ hasItems = true }: { hasItems?: boolean }
 	const { menuOpen, setMenuOpen, menuId } = useSiteHeader();
 	if (!hasItems) return null;
 	return (
-		<Button
-			variant="ghost"
+		<button
+			type="button"
 			onClick={() => setMenuOpen(!menuOpen)}
 			aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
 			aria-expanded={menuOpen}
 			aria-controls={menuId}
-			className="size-10 p-0 hover:bg-muted md:hidden"
+			className={cn(iconButton, "min-[900px]:hidden")}
 		>
-			{menuOpen ? <X className="size-5 text-foreground" /> : <Menu className="size-5 text-foreground" />}
-		</Button>
+			{menuOpen ? <X className="size-5" strokeWidth={2.5} /> : <Menu className="size-5" strokeWidth={2.5} />}
+		</button>
 	);
 }
 
@@ -178,12 +184,8 @@ export function SiteHeaderBackButton() {
 		else router.push("/");
 	};
 	return (
-		<Button
-			variant="ghost"
-			onClick={goBack}
-			className="h-10 px-2 text-sm font-light tracking-wide text-foreground uppercase hover:bg-primary hover:text-primary-foreground sm:px-3"
-		>
-			<ArrowLeft className="size-4" /> Voltar
+		<Button variant="ghost" size="sm" onClick={goBack} className="px-2 text-label hover:text-primary">
+			<ArrowLeft strokeWidth={3} /> Voltar
 		</Button>
 	);
 }

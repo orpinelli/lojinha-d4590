@@ -32,7 +32,7 @@ export default async function EditShowcasePage({ params }: Props) {
 					<PageHeader.Description>Editar vitrine</PageHeader.Description>
 				</PageHeader.Content>
 				<PageHeader.Actions>
-					<Button asChild variant="outline" className="h-10 hover:bg-muted hover:text-foreground">
+					<Button asChild variant="outline">
 						<a href="/" target="_blank" rel="noopener noreferrer">
 							<ExternalLink /> Ver loja
 						</a>

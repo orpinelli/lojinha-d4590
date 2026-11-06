@@ -156,7 +156,7 @@ export function ProductForm({
 							label="Visível na loja"
 							description="Desligue para esconder o produto sem excluir."
 						/>
-						<p className="flex gap-2 rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">
+						<p className="flex gap-2 rounded-xl bg-muted p-3 text-sm font-semibold text-muted-foreground">
 							<GalleryHorizontalEnd className="mt-0.5 size-4 shrink-0" aria-hidden />
 							<span>
 								{showcaseTitles === undefined
@@ -164,7 +164,7 @@ export function ProductForm({
 									: showcaseTitles.length > 0
 										? `Aparece nas vitrines: ${showcaseTitles.join(", ")}.`
 										: "Ainda não está em nenhuma vitrine visível."}{" "}
-								<Link href="/gerenciamento/vitrines" className="font-medium text-foreground underline-offset-4 hover:underline">
+								<Link href="/gerenciamento/vitrines" className="font-extrabold text-link underline-offset-4 hover:underline">
 									Gerenciar vitrines
 								</Link>
 							</span>
@@ -173,7 +173,7 @@ export function ProductForm({
 				</FormSection.Root>
 
 				<FormActions>
-					<Button asChild variant="outline" className="h-10 hover:bg-muted hover:text-foreground">
+					<Button asChild variant="outline">
 						<Link href={PRODUCTS_PATH}>Cancelar</Link>
 					</Button>
 					<FormSubmitButton>{product ? "Salvar alterações" : "Cadastrar produto"}</FormSubmitButton>

@@ -15,7 +15,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { adminNavItemClass } from "@/components/admin/admin-shell/admin-shell";
 import { useAdminMutation } from "@/hooks/use-admin-mutation";
 import { adminApi } from "@/lib/api-client";
@@ -41,7 +41,7 @@ export function FormSubmitButton({
 		<Button
 			type="submit"
 			disabled={pending || (requireDirty && !formState.isDirty)}
-			className={cn("h-10 w-full sm:w-auto", className)}
+			className={cn("w-full sm:w-auto", className)}
 		>
 			{pending ? <Loader2 className="animate-spin" /> : icon}
 			{pending ? pendingLabel : children}
@@ -86,7 +86,7 @@ export function ConfirmDialog({
 					<AlertDialogAction
 						onClick={confirm}
 						disabled={pending}
-						className="bg-destructive text-white hover:bg-destructive/90"
+						className={buttonVariants({ variant: "destructive" })}
 					>
 						{pending && <Loader2 className="animate-spin" />}
 						{pending ? "Excluindo..." : confirmLabel}
@@ -154,14 +154,15 @@ export function DeleteButton({
 					<Button
 						variant="ghost"
 						aria-label={`Excluir ${name}`}
-						className="size-10 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+						size="icon"
+						className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 					>
 						<Trash2 className="size-4" />
 					</Button>
 				) : (
 					<Button
 						variant="outline"
-						className="h-10 text-destructive hover:bg-destructive/10 hover:text-destructive"
+						className="text-destructive"
 					>
 						<Trash2 /> Excluir
 					</Button>
@@ -192,7 +193,7 @@ export function LogoutButton() {
 			disabled={pending}
 			className={cn(
 				adminNavItemClass,
-				"text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-60",
+				"border-transparent text-label hover:bg-destructive/10 hover:text-destructive disabled:opacity-60",
 			)}
 		>
 			{pending ? <Loader2 className="animate-spin" /> : <LogOut />}

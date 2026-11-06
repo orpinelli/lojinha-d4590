@@ -14,9 +14,9 @@ export function defaultSiteSettings(): SiteSettings {
 			primary: "#d41367",
 			primaryForeground: "#ffffff",
 			background: "#ffffff",
-			foreground: "#000000",
-			mutedForeground: "#4b5563",
-			footerBackground: "#000000",
+			foreground: "#4b4b4b",
+			mutedForeground: "#777777",
+			footerBackground: "#d41367",
 			footerForeground: "#ffffff",
 		},
 		hero: {
@@ -24,6 +24,8 @@ export function defaultSiteSettings(): SiteSettings {
 			highlight: "DISTRITO 4590",
 			subtitle:
 				"Uma coleção exclusiva que celebra a excelência e o compromisso com o serviço.",
+			primaryCta: "Ver produtos",
+			secondaryCta: "Falar no WhatsApp",
 		},
 		labels: {
 			shipping: "Frete Grátis",

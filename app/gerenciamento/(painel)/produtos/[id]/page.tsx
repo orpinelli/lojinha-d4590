@@ -34,7 +34,7 @@ export default async function EditProductPage({ params }: Props) {
 				</PageHeader.Content>
 				<PageHeader.Actions>
 					{product.active && (
-						<Button asChild variant="outline" className="h-10 hover:bg-muted hover:text-foreground">
+						<Button asChild variant="outline">
 							<a href={productPath(product)} target="_blank" rel="noopener noreferrer">
 								<ExternalLink /> Ver na loja
 							</a>

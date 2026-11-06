@@ -24,7 +24,7 @@ export default async function ShowcasesPage() {
 					</PageHeader.Description>
 				</PageHeader.Content>
 				<PageHeader.Actions>
-					<Button asChild className="h-10">
+					<Button asChild>
 						<Link href="/gerenciamento/vitrines/nova">
 							<Plus /> Nova vitrine
 						</Link>

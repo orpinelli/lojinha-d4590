@@ -14,13 +14,12 @@ import type { CategoryWithCount } from "@/modules/catalog/application/catalog-se
 import type { ShowcaseSummary } from "@/modules/showcase/application/showcase-service";
 import { SHOWCASE_LAYOUT_LABELS } from "@/modules/showcase/domain/showcase";
 
-const editButton = "h-10 hover:bg-muted hover:text-foreground";
 
 function Position({ index }: { index: number }) {
 	return (
 		<span
 			aria-hidden
-			className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold tabular-nums"
+			className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-extrabold text-label tabular-nums"
 		>
 			{index + 1}
 		</span>
@@ -73,7 +72,7 @@ export function ShowcaseList({
 									</ResourceList.Meta>
 								</ResourceList.Content>
 								<ResourceList.Actions>
-									<Button asChild variant="outline" className={editButton}>
+									<Button asChild variant="outline" size="sm">
 										<Link href={editPath}>
 											<Pencil /> Editar
 										</Link>
@@ -117,7 +116,7 @@ export function CategoryList({ categories }: { categories: CategoryWithCount[] }
 								<CategoryDialog
 									category={{ id: category.id, name: category.name }}
 									trigger={
-										<Button variant="outline" className={editButton}>
+										<Button variant="outline" size="sm">
 											<Pencil /> Editar
 										</Button>
 									}

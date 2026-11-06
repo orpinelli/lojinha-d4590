@@ -9,6 +9,7 @@ import {
 	Tags,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SectionLabel } from "@/components/ui/section-label";
 import { PageHeader, ShortcutCard, StatCard } from "@/components/admin/blocks";
 import { getDataProviderName, getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
 					<PageHeader.Description className="break-all">Conectado como {session.email}</PageHeader.Description>
 				</PageHeader.Content>
 				<PageHeader.Actions>
-					<Button asChild className="h-10">
+					<Button asChild>
 						<Link href="/gerenciamento/produtos/novo">
 							<Plus /> Novo produto
 						</Link>
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
 				))}
 			</div>
 
-			<h2 className="mt-8 mb-3 text-sm font-semibold text-muted-foreground uppercase">Atalhos</h2>
+			<SectionLabel className="mt-10 mb-4">Atalhos</SectionLabel>
 			<div className="grid gap-3 md:grid-cols-2">
 				<ShortcutCard href="/gerenciamento/vitrines" icon={<GalleryHorizontalEnd />} title="Vitrines" description="Seções da página inicial e a ordem delas." />
 				<ShortcutCard href="/gerenciamento/produtos" icon={<Package />} title="Produtos" description="Preços, fotos, tamanhos e descrições." />
@@ -64,21 +65,17 @@ export default async function DashboardPage() {
 				<ShortcutCard href="/gerenciamento/conteudo" icon={<FileText />} title="Textos e contato" description="Topo, selo de frete, WhatsApp, Instagram e rodapé." />
 			</div>
 
-			<div className="mt-8 flex gap-3 rounded-lg border bg-background p-4 text-sm">
-				<Database className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-				{isLocal ? (
+			{/* Only a development warning: in production nothing is shown here. */}
+			{isLocal && (
+				<div className="mt-8 flex gap-3 rounded-2xl border-2 bg-background p-4 text-sm">
+					<Database className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
 					<p className="text-muted-foreground">
 						<strong className="text-foreground">Modo local.</strong> Os dados estão sendo salvos em
 						arquivos neste computador (pasta <code>.storage</code>). Para publicar na internet, use o
 						Supabase (<code>DATA_PROVIDER=supabase</code>).
 					</p>
-				) : (
-					<p className="text-muted-foreground">
-						<strong className="text-foreground">Conectado ao Supabase.</strong> Os dados ficam no banco
-						protegido por Row Level Security.
-					</p>
-				)}
-			</div>
+				</div>
+			)}
 		</>
 	);
 }

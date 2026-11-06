@@ -1,6 +1,6 @@
 import { Minus, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 /** Used by the product page and the cart (same control, two sizes). */
 export function QuantityStepper({
@@ -18,38 +18,36 @@ export function QuantityStepper({
 	size?: "sm" | "md";
 	className?: string;
 }) {
-	const buttonSize = size === "sm" ? "size-9" : "size-10";
-	const iconSize = size === "sm" ? "size-3" : "size-4";
-
+	const buttonClass = size === "sm" ? "size-9 rounded-[10px]" : "size-11";
 	return (
-		<div className={cn("flex items-center gap-2 sm:gap-3", className)}>
+		<div className={cn("flex items-center gap-2 pb-1 sm:gap-3", className)}>
 			<Button
-				type="button"
 				variant="outline"
+				size="icon"
 				onClick={onDecrement}
 				disabled={value <= min}
 				aria-label="Diminuir quantidade"
-				className={cn(buttonSize, "bg-transparent p-0")}
+				className={buttonClass}
 			>
-				<Minus className={iconSize} />
+				<Minus />
 			</Button>
 			<span
 				aria-live="polite"
 				className={cn(
-					"w-8 text-center text-foreground",
-					size === "sm" ? "text-sm font-medium" : "w-10 text-lg font-light sm:text-xl",
+					"text-center font-extrabold text-foreground tabular-nums",
+					size === "sm" ? "w-7 text-base" : "w-10 text-xl",
 				)}
 			>
 				{value}
 			</span>
 			<Button
-				type="button"
 				variant="outline"
+				size="icon"
 				onClick={onIncrement}
 				aria-label="Aumentar quantidade"
-				className={cn(buttonSize, "bg-transparent p-0")}
+				className={buttonClass}
 			>
-				<Plus className={iconSize} />
+				<Plus />
 			</Button>
 		</div>
 	);

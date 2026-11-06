@@ -1,7 +1,9 @@
 import { Hero, SiteFooter } from "@/components/store/sections";
 import { FeaturedShowcase, ShowcaseBlock } from "@/components/store/showcases";
 import { SiteHeader, type SiteNavItem } from "@/components/store/site-header";
+import { Button } from "@/components/ui/button";
 import { getHomeShowcases, getSiteSettings } from "@/lib/server/queries";
+import { whatsappChatUrl } from "@/modules/cart/domain/order-message";
 import { slugify } from "@/modules/shared/domain/text";
 
 /** Unique, readable anchors per showcase (e.g. #vestuario). */
@@ -26,6 +28,8 @@ export default async function HomePage() {
 	const navItems: SiteNavItem[] = showcases
 		.filter(({ showcase }) => showcase.layout !== "featured")
 		.map(({ showcase }) => ({ id: anchors.get(showcase.id) ?? showcase.id, label: showcase.title }));
+	const firstAnchor = navItems[0]?.id;
+	const showPrimaryCta = Boolean(hero.primaryCta && firstAnchor);
 
 	return (
 		<div className="min-h-screen overflow-x-hidden bg-background">
@@ -48,6 +52,22 @@ export default async function HomePage() {
 						{hero.highlight && <Hero.Highlight>{hero.highlight}</Hero.Highlight>}
 					</Hero.Title>
 					{hero.subtitle && <Hero.Subtitle>{hero.subtitle}</Hero.Subtitle>}
+					{(showPrimaryCta || hero.secondaryCta) && (
+						<Hero.Actions>
+							{showPrimaryCta && (
+								<Button asChild size="lg">
+									<a href={`#${firstAnchor}`}>{hero.primaryCta}</a>
+								</Button>
+							)}
+							{hero.secondaryCta && (
+								<Button asChild size="lg" variant="secondary">
+									<a href={whatsappChatUrl(contact.whatsappNumber)} target="_blank" rel="noopener noreferrer">
+										{hero.secondaryCta}
+									</a>
+								</Button>
+							)}
+						</Hero.Actions>
+					)}
 				</Hero.Root>
 
 				{showcases.map(({ showcase, products }, index) =>

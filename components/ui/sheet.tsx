@@ -45,7 +45,7 @@ function SheetContent({
       >
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close className="focus-visible:ring-ring absolute top-3 right-3 inline-flex size-10 items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:outline-none">
+          <SheetPrimitive.Close className="focus-visible:ring-ring absolute top-3 right-3 inline-flex size-10 items-center justify-center rounded-xl text-label opacity-100 hover:bg-primary/10 hover:text-primary transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:outline-none">
             <XIcon className="size-5" />
             <span className="sr-only">Fechar</span>
           </SheetPrimitive.Close>

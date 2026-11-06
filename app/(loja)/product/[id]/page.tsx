@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Price } from "@/components/store/price";
 import { ProductDetails } from "@/components/store/product-details";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { ProductPurchase } from "@/components/store/product-purchase";
 import { SiteHeader } from "@/components/store/site-header";
 import { ShippingBadge } from "@/components/store/store-badges";
+import { Badge } from "@/components/ui/badge";
 import { getPublicProduct } from "@/lib/server/queries";
 import { productCover } from "@/modules/catalog/domain/product";
 
@@ -35,12 +35,12 @@ export default async function ProductPage({ params }: Props) {
 			<SiteHeader.Root position="sticky">
 				<SiteHeader.Bar>
 					<SiteHeader.BackButton />
-					<SiteHeader.Brand size="sm" />
+					<SiteHeader.Brand />
 					<SiteHeader.CartButton />
 				</SiteHeader.Bar>
 			</SiteHeader.Root>
 
-			<main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+			<main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 sm:py-12 lg:px-10">
 				<div className="grid gap-8 sm:gap-12 lg:grid-cols-2 lg:gap-16">
 					<ProductGallery.Root images={product.images} alt={product.name}>
 						<ProductGallery.Main />
@@ -48,17 +48,16 @@ export default async function ProductPage({ params }: Props) {
 					</ProductGallery.Root>
 
 					<div className="min-w-0 space-y-6 sm:space-y-8">
-						<div>
-							{category && (
-								<Badge className="mb-3 bg-muted text-xs font-light tracking-wider text-muted-foreground uppercase sm:mb-4">
-									{category.name}
-								</Badge>
-							)}
-							<h1 className="mb-4 text-3xl font-light tracking-tight break-words text-foreground sm:mb-6 sm:text-4xl md:text-5xl">
+						<div className="space-y-3">
+							{category && <Badge>{category.name}</Badge>}
+							<h1 className="font-display text-3xl leading-tight font-semibold break-words text-foreground sm:text-4xl md:text-5xl">
 								{product.name}
 							</h1>
-							<div className="flex flex-wrap items-center gap-4 sm:gap-6">
-								<Price cents={product.priceInCents} className="text-3xl font-light sm:text-4xl" />
+							{product.description && (
+								<p className="text-base leading-relaxed text-muted-foreground sm:text-[17px]">{product.description}</p>
+							)}
+							<div className="flex flex-wrap items-center gap-3 pt-1">
+								<Price cents={product.priceInCents} className="font-display text-4xl font-semibold text-primary" />
 								<ShippingBadge />
 							</div>
 						</div>

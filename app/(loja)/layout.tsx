@@ -10,7 +10,9 @@ export default async function StoreLayout({ children }: { children: React.ReactN
 	return (
 		<SiteSettingsProvider settings={settings}>
 			<CartProvider>
-				{children}
+				<div data-storefront className="min-h-screen bg-background text-foreground">
+					{children}
+				</div>
 				<CartSidebar />
 			</CartProvider>
 		</SiteSettingsProvider>

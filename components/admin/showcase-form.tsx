@@ -95,7 +95,7 @@ function toFormValues(showcase?: Showcase): ShowcaseInput {
 
 function Thumb({ src }: { src: string }) {
 	return (
-		<span className="relative size-12 shrink-0 overflow-hidden rounded-md bg-muted">
+		<span className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-muted">
 			{src && <Image src={src} alt="" fill sizes="48px" className="object-cover" />}
 		</span>
 	);
@@ -189,7 +189,7 @@ export function ShowcaseForm({ showcase, products, categories }: Catalog & { sho
 				</FormSection.Root>
 
 				<FormActions>
-					<Button asChild variant="outline" className="h-10 hover:bg-muted hover:text-foreground">
+					<Button asChild variant="outline">
 						<Link href={SHOWCASES_PATH}>Cancelar</Link>
 					</Button>
 					<FormSubmitButton>{showcase ? "Salvar vitrine" : "Criar vitrine"}</FormSubmitButton>
@@ -245,30 +245,30 @@ function ProductPicker({ products, categories }: Catalog) {
 					>
 						<div className="space-y-2">
 							<div className="relative">
-								<Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+								<Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-label" />
 								<Input
 									value={query}
 									onChange={(event) => setQuery(event.target.value)}
 									placeholder="Buscar produto ou categoria"
 									aria-label="Buscar produto"
-									className="pl-9"
+									className="pl-11"
 								/>
 							</div>
 							<FormControl>
-								<ul className="max-h-80 divide-y overflow-y-auto overscroll-contain rounded-md border">
+								<ul className="max-h-80 divide-y-2 overflow-y-auto overscroll-contain rounded-2xl border-2">
 									{visible.map((product) => (
 										<li key={product.id}>
-											<label className="flex cursor-pointer items-center gap-3 p-2.5 hover:bg-muted/60">
+											<label className="flex cursor-pointer items-center gap-3 p-3 hover:bg-muted">
 												<input
 													type="checkbox"
 													checked={selected.includes(product.id)}
 													onChange={() => toggle(product.id)}
-													className="size-4 shrink-0 accent-primary"
+													className="size-5 shrink-0 accent-primary"
 												/>
 												<Thumb src={product.image} />
 												<span className="min-w-0 flex-1">
-													<span className="block truncate text-sm font-medium">{product.name}</span>
-													<span className="block truncate text-xs text-muted-foreground">
+													<span className="block truncate text-sm font-bold">{product.name}</span>
+													<span className="block truncate text-xs font-semibold text-muted-foreground">
 														{categoryName.get(product.categoryId) ?? "Sem categoria"}
 														{!product.active && " · oculto na loja"}
 													</span>
@@ -301,7 +301,7 @@ function ProductOrder({ products, categories }: Catalog) {
 
 	if (rows.length === 0) {
 		return (
-			<p className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
+			<p className="rounded-2xl border-2 border-dashed p-5 text-center text-sm font-semibold text-muted-foreground">
 				{source === "categories"
 					? "Escolha categorias acima para ver os produtos desta vitrine."
 					: "Selecione produtos acima para montar a vitrine."}
@@ -360,7 +360,8 @@ function ProductOrder({ products, categories }: Catalog) {
 									aria-pressed={hidden}
 									aria-label={hidden ? `Mostrar ${product.name} nesta vitrine` : `Ocultar ${product.name} desta vitrine`}
 									title={hidden ? "Mostrar nesta vitrine" : "Ocultar desta vitrine"}
-									className="size-10 shrink-0 p-0 hover:bg-muted hover:text-foreground"
+									size="icon"
+									className="shrink-0 text-label hover:bg-muted hover:text-foreground"
 								>
 									{hidden ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
 								</Button>
@@ -370,7 +371,8 @@ function ProductOrder({ products, categories }: Catalog) {
 									variant="ghost"
 									onClick={() => remove(product.id)}
 									aria-label={`Remover ${product.name} da vitrine`}
-									className="size-10 shrink-0 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+									size="icon"
+									className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
 								>
 									<X className="size-4" />
 								</Button>

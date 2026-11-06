@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { useFormContext } from "react-hook-form";
 import { ImageIcon, ImagePlus, Loader2, Plus, Star, Trash2, Upload, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormControl, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,6 @@ function HiddenFileInput({
 	);
 }
 
-const neutralButton = "hover:bg-muted hover:text-foreground";
 
 /** Toggle button shared by sizes and category pickers. */
 export function ToggleChip({
@@ -54,8 +54,10 @@ export function ToggleChip({
 			type="button"
 			aria-pressed={pressed}
 			className={cn(
-				"min-h-10 min-w-12 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
-				pressed ? "border-primary bg-primary text-primary-foreground" : "bg-background hover:bg-muted",
+				"min-h-11 min-w-12 rounded-xl border-2 border-b-4 px-3 text-sm font-extrabold uppercase transition-[background-color,border-color,transform] focus-visible:ring-[3px] focus-visible:ring-link/40 focus-visible:outline-none active:translate-y-0.5 active:border-b-2",
+				pressed
+					? "border-primary bg-primary/10 text-primary"
+					: "border-border bg-background text-foreground hover:bg-muted",
 				className,
 			)}
 			{...props}
@@ -84,7 +86,7 @@ export function ImageField({
 					<div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center">
 						<div
 							className={cn(
-								"relative flex h-24 w-full shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted min-[420px]:w-40",
+								"relative flex h-24 w-full shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 bg-muted min-[420px]:w-40",
 								previewClassName,
 							)}
 						>
@@ -101,7 +103,6 @@ export function ImageField({
 								disabled={uploading}
 								onClick={() => inputRef.current?.click()}
 								onBlur={field.onBlur}
-								className={neutralButton}
 							>
 								{uploading ? <Loader2 className="animate-spin" /> : <Upload />}
 								{uploading ? "Enviando..." : field.value ? "Trocar imagem" : "Enviar imagem"}
@@ -143,8 +144,10 @@ function TileButton({
 			disabled={disabled}
 			onClick={onClick}
 			className={cn(
-				"size-9 p-0",
-				destructive ? "text-destructive hover:bg-destructive/10 hover:text-destructive" : neutralButton,
+				"size-9 rounded-[10px]",
+				destructive
+					? "text-destructive hover:bg-destructive/10 hover:text-destructive"
+					: "text-label hover:bg-muted hover:text-foreground",
 			)}
 		>
 			{children}
@@ -198,17 +201,17 @@ export function ImageListField({
 									<SortableItem
 										key={ids[index]}
 										id={ids[index]}
-										className="overflow-hidden rounded-lg border bg-muted"
+										className="overflow-hidden rounded-2xl border-2 bg-muted"
 									>
 										<div className="relative aspect-square">
 											<Image src={url} alt={`Imagem ${index + 1}`} fill sizes="200px" className="object-cover" />
 										</div>
 										{index === 0 && (
-											<span className="absolute top-2 left-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+											<Badge variant="solid" className="absolute top-2 left-2">
 												Capa
-											</span>
+											</Badge>
 										)}
-										<div className="flex items-center justify-between gap-1 border-t bg-background p-1">
+										<div className="flex items-center justify-between gap-1 border-t-2 bg-background p-1">
 											<SortableHandle label={`Mover imagem ${index + 1}`} className="size-9" />
 											<TileButton label="Usar como capa" disabled={index === 0} onClick={() => moveToFront(index)}>
 												<Star className="size-4" />
@@ -230,7 +233,7 @@ export function ImageListField({
 											disabled={uploading}
 											onClick={() => inputRef.current?.click()}
 											onBlur={field.onBlur}
-											className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-2 text-center text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+											className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-2 text-center text-sm font-extrabold text-label uppercase transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary disabled:opacity-60"
 										>
 											{uploading ? <Loader2 className="size-6 animate-spin" /> : <ImagePlus className="size-6" />}
 											<span>{uploading ? "Enviando..." : "Adicionar imagens"}</span>
@@ -297,7 +300,8 @@ export function StringListField({
 												variant="ghost"
 												aria-label={`Remover item ${index + 1}`}
 												onClick={() => field.onChange(items.filter((_, i) => i !== index))}
-												className="size-10 shrink-0 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+												size="icon"
+												className="shrink-0 text-label hover:bg-destructive/10 hover:text-destructive"
 											>
 												<X className="size-4" />
 											</Button>
@@ -312,7 +316,6 @@ export function StringListField({
 										type="button"
 										variant="outline"
 										onClick={() => field.onChange([...items, ""])}
-										className={neutralButton}
 									>
 										<Plus /> {addLabel}
 									</Button>
@@ -432,7 +435,7 @@ export function SizesField({ name, label, description, className }: BaseFieldPro
 									maxLength={10}
 									aria-label="Adicionar outro tamanho"
 								/>
-								<Button type="button" variant="outline" onClick={addCustom} className={cn("shrink-0", neutralButton)}>
+								<Button type="button" variant="outline" onClick={addCustom} className="shrink-0">
 									Adicionar
 								</Button>
 							</div>

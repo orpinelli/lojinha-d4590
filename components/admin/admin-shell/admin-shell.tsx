@@ -28,7 +28,7 @@ export function AdminShellRoot({ children }: { children: ReactNode }) {
 
 	return (
 		<ShellContext.Provider value={{ mobileOpen, setMobileOpen }}>
-			<div className="min-h-dvh bg-muted/40 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+			<div className="min-h-dvh bg-background lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
 				{children}
 			</div>
 		</ShellContext.Provider>
@@ -39,11 +39,11 @@ export function AdminShellSidebar({ children }: { children: ReactNode }) {
 	const { mobileOpen, setMobileOpen } = useShell();
 	return (
 		<>
-			<aside className="sticky top-0 hidden h-dvh flex-col border-r bg-background lg:flex">
+			<aside className="sticky top-0 hidden h-dvh flex-col border-r-2 bg-background lg:flex">
 				{children}
 			</aside>
 			<Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-				<SheetContent side="left" aria-describedby={undefined} className="w-[85vw] max-w-xs lg:hidden">
+				<SheetContent side="left" aria-describedby={undefined} className="w-[85vw] max-w-xs border-r-2 lg:hidden">
 					<SheetTitle className="sr-only">Menu do painel</SheetTitle>
 					{children}
 				</SheetContent>
@@ -52,28 +52,39 @@ export function AdminShellSidebar({ children }: { children: ReactNode }) {
 	);
 }
 
+/** Same pattern as the store navbar: logo + divider + section label. */
+function BrandMark({ logoUrl }: { logoUrl: string }) {
+	return (
+		<span className="flex min-w-0 items-center gap-2.5">
+			<Image src={logoUrl} alt="" width={96} height={32} className="h-8 w-auto max-w-24 object-contain" />
+			<span aria-hidden className="h-6 w-px shrink-0 bg-border" />
+			<span className="truncate text-[10px] font-extrabold tracking-[1px] text-label uppercase">
+				Gerenciamento
+			</span>
+		</span>
+	);
+}
+
 export function AdminShellBrand({ logoUrl, storeName }: { logoUrl: string; storeName: string }) {
 	return (
-		<div className="flex h-16 shrink-0 items-center gap-3 border-b px-5 pr-14 lg:pr-5">
-			<Image src={logoUrl} alt="" width={96} height={32} className="h-8 w-auto max-w-24 object-contain" />
-			<div className="min-w-0">
-				<p className="truncate text-sm font-semibold">{storeName}</p>
-				<p className="text-xs text-muted-foreground">Gerenciamento</p>
-			</div>
+		<div className="flex h-16 shrink-0 items-center border-b-2 px-4 pr-14 lg:pr-4" title={storeName}>
+			<BrandMark logoUrl={logoUrl} />
 		</div>
 	);
 }
 
 export function AdminShellNav({ children }: { children: ReactNode }) {
 	return (
-		<nav aria-label="Painel" className="flex-1 space-y-1 overflow-y-auto p-3">
+		<nav aria-label="Painel" className="flex-1 space-y-1.5 overflow-y-auto p-3">
 			{children}
 		</nav>
 	);
 }
 
 export const adminNavItemClass =
-	"flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors [&_svg]:size-4 [&_svg]:shrink-0";
+	"flex min-h-12 w-full items-center gap-3 rounded-xl border-2 px-3 text-[13px] font-extrabold tracking-[0.5px] uppercase transition-colors [&_svg]:size-5 [&_svg]:shrink-0";
+
+const inactiveNavItem = "border-transparent text-label hover:bg-muted hover:text-foreground";
 
 export function AdminShellNavLink({
 	href,
@@ -94,9 +105,7 @@ export function AdminShellNavLink({
 			aria-current={active ? "page" : undefined}
 			className={cn(
 				adminNavItemClass,
-				active
-					? "bg-primary text-primary-foreground"
-					: "text-muted-foreground hover:bg-muted hover:text-foreground",
+				active ? "border-primary/40 bg-primary/10 text-primary" : inactiveNavItem,
 			)}
 		>
 			{icon}
@@ -119,7 +128,7 @@ export function AdminShellExternalLink({
 			href={href}
 			target="_blank"
 			rel="noopener noreferrer"
-			className={cn(adminNavItemClass, "text-muted-foreground hover:bg-muted hover:text-foreground")}
+			className={cn(adminNavItemClass, inactiveNavItem)}
 		>
 			{icon}
 			<span className="truncate">{children}</span>
@@ -128,12 +137,16 @@ export function AdminShellExternalLink({
 }
 
 export function AdminShellSidebarFooter({ children }: { children: ReactNode }) {
-	return <div className="shrink-0 space-y-1 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">{children}</div>;
+	return (
+		<div className="shrink-0 space-y-1.5 border-t-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+			{children}
+		</div>
+	);
 }
 
 export function AdminShellUser({ email }: { email: string }) {
 	return (
-		<p className="truncate px-3 pb-2 text-xs text-muted-foreground" title={email}>
+		<p className="truncate px-3 pb-1 text-xs font-semibold text-label" title={email}>
 			{email}
 		</p>
 	);
@@ -143,28 +156,27 @@ export function AdminShellMain({ children }: { children: ReactNode }) {
 	return <div className="flex min-w-0 flex-col">{children}</div>;
 }
 
-export function AdminShellTopBar({ storeName }: { storeName: string }) {
+export function AdminShellTopBar({ logoUrl }: { logoUrl: string }) {
 	const { setMobileOpen } = useShell();
 	return (
-		<header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/95 px-2 backdrop-blur sm:px-4 lg:hidden">
+		<header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b-2 bg-background/95 px-2 backdrop-blur sm:px-4 lg:hidden">
 			<Button
 				variant="ghost"
+				size="icon"
 				onClick={() => setMobileOpen(true)}
 				aria-label="Abrir menu do painel"
-				className="size-10 p-0 hover:bg-muted hover:text-foreground"
+				className="text-foreground hover:bg-muted hover:text-foreground"
 			>
-				<Menu className="size-5" />
+				<Menu className="size-5" strokeWidth={2.5} />
 			</Button>
-			<div className="min-w-0">
-				<p className="truncate text-sm font-semibold">{storeName}</p>
-			</div>
+			<BrandMark logoUrl={logoUrl} />
 		</header>
 	);
 }
 
 export function AdminShellContent({ children }: { children: ReactNode }) {
 	return (
-		<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+		<main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
 			{children}
 		</main>
 	);

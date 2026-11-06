@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: Props) {
 	const { branding } = await getSiteSettings();
 
 	return (
-		<div className="flex min-h-dvh items-center justify-center bg-muted/40 px-4 py-10">
+		<div className="flex min-h-dvh items-center justify-center bg-[linear-gradient(to_bottom,color-mix(in_oklab,var(--primary)_12%,var(--background)),var(--background))] px-4 py-10">
 			<div className="w-full max-w-sm">
 				<div className="mb-6 flex flex-col items-center gap-4 text-center">
 					<Image
@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: Props) {
 						className="h-12 w-auto max-w-[70%] object-contain"
 					/>
 					<div className="space-y-1">
-						<h1 className="text-xl font-semibold">Gerenciamento</h1>
+						<h1 className="font-display text-3xl font-semibold text-foreground">Gerenciamento</h1>
 						<p className="text-sm text-muted-foreground">Entre para editar a loja.</p>
 					</div>
 				</div>
@@ -37,7 +37,7 @@ export default async function LoginPage({ searchParams }: Props) {
 					</FormSection.Content>
 				</FormSection.Root>
 				<p className="mt-6 text-center text-sm">
-					<Link href="/" className="text-muted-foreground hover:text-foreground">
+					<Link href="/" className="text-[13px] font-extrabold tracking-[0.5px] text-link uppercase underline-offset-4 hover:underline">
 						← Voltar para a loja
 					</Link>
 				</p>

@@ -27,7 +27,7 @@ export function ProductCollection({
 					pagination
 					slidesPerView={1.2}
 					breakpoints={CAROUSEL_BREAKPOINTS}
-					className="pb-10"
+					className="pt-1 pb-12"
 					slideClassName="!h-auto"
 				>
 					{cards}

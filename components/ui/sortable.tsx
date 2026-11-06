@@ -150,7 +150,7 @@ function SortableHandle({ label, className }: { label: string; className?: strin
       aria-label={label}
       title="Arraste para mudar a ordem"
       className={cn(
-        "flex size-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
+        "flex size-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-xl text-label transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-none",
         isDragging && "cursor-grabbing text-primary",
         className
       )}

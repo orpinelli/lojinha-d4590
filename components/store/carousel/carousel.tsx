@@ -102,7 +102,7 @@ export function CarouselViewport({
 }
 
 const arrowClass =
-	"absolute top-1/2 z-10 hidden -translate-y-1/2 items-center justify-center rounded-full bg-background p-2 shadow-lg transition-colors hover:bg-muted md:flex";
+	"absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-stroke bg-background shadow-[0_3px_0_var(--stroke)] transition-[background-color,transform,box-shadow] hover:bg-muted active:translate-y-[calc(-50%+3px)] active:shadow-none md:flex";
 
 export function CarouselPrevious({ className, ...props }: ComponentProps<"button">) {
 	const { swiper, locked } = useCarousel();
@@ -115,7 +115,7 @@ export function CarouselPrevious({ className, ...props }: ComponentProps<"button
 			className={cn(arrowClass, "-left-2 lg:-left-4", className)}
 			{...props}
 		>
-			<ChevronLeft className="size-5 text-muted-foreground" />
+			<ChevronLeft className="size-5 text-foreground" strokeWidth={3} />
 		</button>
 	);
 }
@@ -131,7 +131,7 @@ export function CarouselNext({ className, ...props }: ComponentProps<"button">) 
 			className={cn(arrowClass, "-right-2 lg:-right-4", className)}
 			{...props}
 		>
-			<ChevronRight className="size-5 text-muted-foreground" />
+			<ChevronRight className="size-5 text-foreground" strokeWidth={3} />
 		</button>
 	);
 }

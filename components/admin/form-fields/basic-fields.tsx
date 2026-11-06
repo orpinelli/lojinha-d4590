@@ -153,7 +153,7 @@ export function SwitchField({ name, label, description, className }: BaseFieldPr
 			name={name}
 			render={({ field }) => (
 				<FormItem
-					className={cn("flex items-center justify-between gap-4 rounded-lg border p-3 sm:p-4", className)}
+					className={cn("flex items-center justify-between gap-4 rounded-2xl border-2 p-3 sm:p-4", className)}
 				>
 					<div className="min-w-0 space-y-1">
 						<FormLabel className="leading-snug">{label}</FormLabel>
@@ -200,7 +200,7 @@ export function ChoiceField({
 						{options.map((option) => (
 							<label
 								key={option.value}
-								className="flex cursor-pointer items-start gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary/60 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/40"
+								className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-b-4 bg-background p-3 transition-[background-color,border-color,transform] hover:bg-muted active:translate-y-0.5 active:border-b-2 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-link/40"
 							>
 								<input
 									type="radio"
@@ -215,7 +215,7 @@ export function ChoiceField({
 									className="mt-0.5 size-4 shrink-0 accent-primary"
 								/>
 								<span className="min-w-0">
-									<span className="flex items-center gap-2 text-sm font-medium [&_svg]:size-4 [&_svg]:text-muted-foreground">
+									<span className="flex items-center gap-2 text-sm font-extrabold text-foreground [&_svg]:size-4 [&_svg]:text-primary">
 										{option.icon}
 										{option.label}
 									</span>
@@ -248,7 +248,7 @@ export function ColorField({ name, label, description, className }: BaseFieldPro
 							aria-label={`${label}: seletor de cor`}
 							value={HEX.test(field.value ?? "") ? String(field.value).toLowerCase() : "#000000"}
 							onChange={(event) => field.onChange(event.target.value)}
-							className="h-10 w-12 shrink-0 cursor-pointer rounded-md border bg-background p-1"
+							className="h-12 w-14 shrink-0 cursor-pointer rounded-xl border-2 border-input bg-background p-1"
 						/>
 						<FormControl>
 							<Input

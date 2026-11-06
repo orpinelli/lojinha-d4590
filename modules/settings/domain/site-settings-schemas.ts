@@ -30,6 +30,10 @@ export const heroSchema = z.object({
 	title: text(60),
 	highlight: text(60),
 	subtitle: text(300),
+	/** Button that scrolls to the products (empty = hidden). */
+	primaryCta: text(30),
+	/** Button that opens WhatsApp (empty = hidden). */
+	secondaryCta: text(30),
 });
 
 /** Highlight badges now come from each "Destaque" showcase title. */

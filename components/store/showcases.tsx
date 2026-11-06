@@ -5,6 +5,8 @@ import { FeaturedProductCard } from "./product-card";
 import { ProductCollection } from "./product-collection";
 import { ShowcaseSection } from "./sections";
 
+const countLabel = (count: number) => `${count} produto${count === 1 ? "" : "s"}`;
+
 /** "Destaque" format: large cards; the showcase title becomes the seal. */
 export function FeaturedShowcase({
 	title,
@@ -16,13 +18,13 @@ export function FeaturedShowcase({
 	priority?: boolean;
 }) {
 	return (
-		<section className="px-4 pt-3 pb-6 sm:px-6 sm:pb-10" aria-label={title}>
-			<div className="mx-auto w-full max-w-7xl">
+		<section className="px-4 pt-2 pb-8 sm:px-6 sm:pb-12 lg:px-10" aria-label={title}>
+			<div className="mx-auto w-full max-w-[1440px]">
 				{products.length === 1 ? (
 					<FeaturedProductCard product={products[0]} badge={title} priority={priority} />
 				) : (
 					<Carousel.Root>
-						<Carousel.Viewport loop autoplayDelay={4500} pagination className="pt-3 pb-10">
+						<Carousel.Viewport loop autoplayDelay={4500} pagination className="pt-1 pb-10">
 							{products.map((product, index) => (
 								<FeaturedProductCard
 									key={product.id}
@@ -55,7 +57,10 @@ export function ShowcaseBlock({
 }) {
 	return (
 		<ShowcaseSection.Root id={anchor}>
-			<ShowcaseSection.Title>{title}</ShowcaseSection.Title>
+			<ShowcaseSection.Header>
+				<ShowcaseSection.Label>{countLabel(products.length)}</ShowcaseSection.Label>
+				<ShowcaseSection.Title>{title}</ShowcaseSection.Title>
+			</ShowcaseSection.Header>
 			<ProductCollection layout={layout} products={products} />
 		</ShowcaseSection.Root>
 	);

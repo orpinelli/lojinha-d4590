@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ShoppingCart, Trash2, X } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Price } from "@/components/store/price";
 import { QuantityStepper } from "@/components/store/quantity-stepper";
+import { Button } from "@/components/ui/button";
 import { useCart, type CartItem } from "@/contexts/cart-context";
 import { useSiteSettings } from "@/contexts/site-settings-context";
 import { buildOrderMessage, whatsappOrderUrl } from "@/modules/cart/domain/order-message";
@@ -19,7 +19,7 @@ export function CartSheet({ children }: { children: ReactNode }) {
 				side="right"
 				showCloseButton={false}
 				aria-describedby={undefined}
-				className="sm:w-[380px] md:w-[420px] lg:w-[480px]"
+				className="border-l-2 sm:w-[400px] md:w-[440px]"
 			>
 				{children}
 			</SheetContent>
@@ -29,11 +29,11 @@ export function CartSheet({ children }: { children: ReactNode }) {
 
 export function CartHeader() {
 	return (
-		<div className="flex items-center justify-between border-b p-4 sm:p-6">
-			<SheetTitle className="text-lg sm:text-xl">Carrinho</SheetTitle>
+		<div className="flex h-16 shrink-0 items-center justify-between border-b-2 px-4 sm:px-6">
+			<SheetTitle className="font-display text-2xl font-semibold text-foreground">Carrinho</SheetTitle>
 			<SheetClose asChild>
-				<Button variant="ghost" className="size-10 p-0" aria-label="Fechar carrinho">
-					<X className="size-4" />
+				<Button variant="ghost" size="icon" aria-label="Fechar carrinho" className="text-label hover:text-primary">
+					<X className="size-5" strokeWidth={3} />
 				</Button>
 			</SheetClose>
 		</div>
@@ -43,25 +43,29 @@ export function CartHeader() {
 function CartLine({ item }: { item: CartItem }) {
 	const { updateQuantity, removeItem } = useCart();
 	return (
-		<li className="flex items-center gap-3 rounded-lg border p-3 sm:gap-4 sm:p-4">
-			<div className="relative size-14 shrink-0 sm:size-16">
+		<li className="flex gap-3 rounded-2xl border-2 p-3">
+			<div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-20">
 				{item.image && (
-					<Image
-						src={item.image}
-						alt={item.name}
-						fill
-						sizes="64px"
-						className="rounded-md bg-muted object-cover"
-					/>
+					<Image src={item.image} alt={item.name} fill sizes="80px" className="object-cover" />
 				)}
 			</div>
-			<div className="min-w-0 flex-1">
-				<h3 className="truncate text-sm font-medium text-foreground sm:text-base">{item.name}</h3>
+			<div className="flex min-w-0 flex-1 flex-col gap-1">
+				<div className="flex items-start justify-between gap-2">
+					<h3 className="line-clamp-2 text-sm font-bold text-foreground sm:text-base">{item.name}</h3>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={() => removeItem(item.productId, item.size)}
+						aria-label={`Remover ${item.name}`}
+						className="-mt-1 -mr-1 size-8 shrink-0 text-label hover:bg-destructive/10 hover:text-destructive"
+					>
+						<Trash2 />
+					</Button>
+				</div>
 				{item.size && (
-					<p className="text-xs text-muted-foreground sm:text-sm">Tamanho: {item.size}</p>
+					<p className="text-xs font-bold tracking-[0.5px] text-label uppercase">Tamanho {item.size}</p>
 				)}
-				<Price cents={item.priceInCents} className="text-sm font-medium text-primary sm:text-base" />
-				<div className="mt-2 flex items-center gap-2">
+				<div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
 					<QuantityStepper
 						size="sm"
 						min={0}
@@ -69,14 +73,7 @@ function CartLine({ item }: { item: CartItem }) {
 						onDecrement={() => updateQuantity(item.productId, item.quantity - 1, item.size)}
 						onIncrement={() => updateQuantity(item.productId, item.quantity + 1, item.size)}
 					/>
-					<Button
-						variant="ghost"
-						onClick={() => removeItem(item.productId, item.size)}
-						aria-label={`Remover ${item.name}`}
-						className="ml-1 size-9 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-					>
-						<X className="size-4" />
-					</Button>
+					<Price cents={item.priceInCents * item.quantity} className="font-display text-lg font-semibold text-primary" />
 				</div>
 			</div>
 		</li>
@@ -88,9 +85,15 @@ export function CartItems() {
 	return (
 		<div className="flex-1 overflow-y-auto p-4 sm:p-6">
 			{items.length === 0 ? (
-				<p className="py-8 text-center text-muted-foreground">Seu carrinho está vazio</p>
+				<div className="flex flex-col items-center gap-3 py-12 text-center">
+					<span className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+						<ShoppingCart className="size-7" strokeWidth={2.5} />
+					</span>
+					<p className="font-display text-xl font-semibold text-foreground">Seu carrinho está vazio</p>
+					<p className="text-sm text-muted-foreground">Escolha um produto para começar.</p>
+				</div>
 			) : (
-				<ul className="space-y-3 sm:space-y-4">
+				<ul className="space-y-3">
 					{items.map((item) => (
 						<CartLine key={`${item.productId}-${item.size ?? ""}`} item={item} />
 					))}
@@ -116,16 +119,13 @@ export function CartFooter() {
 	};
 
 	return (
-		<div className="border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
+		<div className="border-t-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
 			<div className="mb-4 flex items-center justify-between">
-				<span className="text-base font-semibold text-foreground sm:text-lg">Total:</span>
-				<Price cents={totalInCents} className="text-base font-bold text-primary sm:text-lg" />
+				<span className="text-sm font-extrabold tracking-[1px] text-label uppercase">Total</span>
+				<Price cents={totalInCents} className="font-display text-3xl font-semibold text-foreground" />
 			</div>
-			<Button
-				onClick={checkout}
-				className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary-hover"
-			>
-				Finalizar Pedido
+			<Button block size="lg" onClick={checkout}>
+				Finalizar pedido
 			</Button>
 		</div>
 	);

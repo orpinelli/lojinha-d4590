@@ -9,6 +9,11 @@ export function buildOrderMessage(items: CartItem[], greeting: string): string {
 	return `${greeting}\n\n${lines.join("\n")}\n\nTotal: ${formatPrice(cartTotal(items))}`;
 }
 
+/** Opens a chat with the store (no pre-filled message). */
+export function whatsappChatUrl(phoneNumber: string): string {
+	return `https://wa.me/${phoneNumber.replace(/\D/g, "")}`;
+}
+
 export function whatsappOrderUrl(phoneNumber: string, message: string): string {
-	return `https://wa.me/${phoneNumber.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+	return `${whatsappChatUrl(phoneNumber)}?text=${encodeURIComponent(message)}`;
 }

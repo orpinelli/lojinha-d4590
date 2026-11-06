@@ -28,7 +28,7 @@ export default async function NewProductPage() {
 					<EmptyState.Title>Crie uma categoria primeiro</EmptyState.Title>
 					<EmptyState.Description>Todo produto pertence a uma categoria da loja.</EmptyState.Description>
 					<EmptyState.Action>
-						<Button asChild className="h-10">
+						<Button asChild>
 							<Link href="/gerenciamento/categorias">Ir para categorias</Link>
 						</Button>
 					</EmptyState.Action>

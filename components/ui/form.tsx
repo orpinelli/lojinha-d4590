@@ -107,7 +107,7 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="form-description"
       id={formDescriptionId}
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-muted-foreground text-[13px]", className)}
       {...props}
     />
   )
@@ -124,7 +124,7 @@ function FormMessage({ className, children, ...props }: React.ComponentProps<"p"
       data-slot="form-message"
       id={formMessageId}
       role="alert"
-      className={cn("text-destructive text-sm", className)}
+      className={cn("text-destructive text-sm font-bold", className)}
       {...props}
     >
       {body}

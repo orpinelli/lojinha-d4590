@@ -54,7 +54,7 @@ export default async function AdminPanelLayout({ children }: { children: React.R
 				</AdminShell.SidebarFooter>
 			</AdminShell.Sidebar>
 			<AdminShell.Main>
-				<AdminShell.TopBar storeName={branding.storeName} />
+				<AdminShell.TopBar logoUrl={branding.logoUrl} />
 				<AdminShell.Content>{children}</AdminShell.Content>
 			</AdminShell.Main>
 		</AdminShell.Root>

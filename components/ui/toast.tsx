@@ -16,15 +16,15 @@ type ShowToast = (toast: Omit<ToastMessage, "id">) => void
 const ICONS = {
   success: <CheckCircle className="w-5 h-5 text-green-500" />,
   warning: <AlertTriangle className="w-5 h-5 text-yellow-500" />,
-  error: <AlertTriangle className="w-5 h-5 text-red-500" />,
-  info: <Info className="w-5 h-5 text-blue-500" />,
+  error: <AlertTriangle className="w-5 h-5 text-destructive" />,
+  info: <Info className="w-5 h-5 text-link" />,
 }
 
-const BORDERS = {
-  success: "border-l-green-500",
-  warning: "border-l-yellow-500",
-  error: "border-l-red-500",
-  info: "border-l-blue-500",
+const ICON_BG = {
+  success: "bg-green-500/12",
+  warning: "bg-yellow-500/15",
+  error: "bg-destructive/12",
+  info: "bg-link/12",
 }
 
 function Toast({ message, onRemove }: { message: ToastMessage; onRemove: (id: string) => void }) {
@@ -36,19 +36,21 @@ function Toast({ message, onRemove }: { message: ToastMessage; onRemove: (id: st
   return (
     <div
       role={message.type === "error" || message.type === "warning" ? "alert" : "status"}
-      className={`bg-white border-l-4 ${BORDERS[message.type]} shadow-lg rounded-r-lg p-4 mb-3 animate-in slide-in-from-right duration-300`}
+      className="mb-3 rounded-2xl border-2 bg-background p-3 shadow-[0_8px_24px_rgba(0,0,0,0.12)] animate-in slide-in-from-right duration-300"
     >
       <div className="flex items-start">
-        <div className="flex-shrink-0">{ICONS[message.type]}</div>
-        <div className="ml-3 flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">{message.title}</p>
-          <p className="text-sm text-gray-600 mt-1 break-words">{message.message}</p>
+        <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${ICON_BG[message.type]}`}>
+          {ICONS[message.type]}
+        </div>
+        <div className="ml-3 min-w-0 flex-1 pt-0.5">
+          <p className="text-sm font-extrabold text-foreground">{message.title}</p>
+          <p className="mt-0.5 text-[13px] font-semibold text-muted-foreground break-words">{message.message}</p>
         </div>
         <button
           type="button"
           onClick={() => onRemove(message.id)}
           aria-label="Fechar aviso"
-          className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          className="ml-2 flex size-8 shrink-0 items-center justify-center rounded-lg text-label transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="w-4 h-4" />
         </button>

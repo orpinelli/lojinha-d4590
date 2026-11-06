@@ -1,14 +1,21 @@
 import Image from "next/image";
 import { Instagram } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
+import { SectionLabel } from "@/components/ui/section-label";
 import { cn } from "@/lib/utils";
 
 /* Server-compatible compound components for the storefront layout. */
 
 function HeroRoot({ className, children, ...props }: ComponentProps<"section">) {
 	return (
-		<section className={cn("px-4 pt-24 pb-12 sm:px-6 sm:pt-28 sm:pb-16 md:pt-32", className)} {...props}>
-			<div className="mx-auto w-full max-w-5xl text-center">{children}</div>
+		<section
+			className={cn(
+				"bg-[linear-gradient(to_bottom,color-mix(in_oklab,var(--primary)_12%,var(--background)),var(--background))] px-5 pt-[104px] pb-10 min-[600px]:px-10 min-[600px]:pt-[120px]",
+				className,
+			)}
+			{...props}
+		>
+			<div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">{children}</div>
 		</section>
 	);
 }
@@ -17,7 +24,7 @@ function HeroTitle({ className, ...props }: ComponentProps<"h1">) {
 	return (
 		<h1
 			className={cn(
-				"mb-4 text-4xl font-light tracking-tight break-words text-foreground sm:mb-6 sm:text-5xl md:text-7xl",
+				"font-display text-[28px] leading-[1.1] font-semibold break-words text-primary min-[600px]:text-[36px] min-[900px]:text-[52px]",
 				className,
 			)}
 			{...props}
@@ -26,14 +33,24 @@ function HeroTitle({ className, ...props }: ComponentProps<"h1">) {
 }
 
 function HeroHighlight({ className, ...props }: ComponentProps<"span">) {
-	return <span className={cn("block font-extralight text-primary", className)} {...props} />;
+	return <span className={cn("block text-foreground", className)} {...props} />;
 }
 
 function HeroSubtitle({ className, ...props }: ComponentProps<"p">) {
 	return (
 		<p
+			className={cn("mt-4 max-w-[520px] text-[17px] leading-normal text-muted-foreground", className)}
+			{...props}
+		/>
+	);
+}
+
+/** Buttons stack (max 280px wide) on phones and tablets, side by side on desktop. */
+function HeroActions({ className, ...props }: ComponentProps<"div">) {
+	return (
+		<div
 			className={cn(
-				"mx-auto mb-8 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mb-12 sm:text-lg md:text-xl",
+				"mt-8 flex w-full flex-col items-center gap-3 pb-1 *:w-full *:max-w-[280px] min-[900px]:w-auto min-[900px]:flex-row min-[900px]:*:w-auto min-[900px]:*:max-w-none",
 				className,
 			)}
 			{...props}
@@ -46,21 +63,26 @@ export const Hero = {
 	Title: HeroTitle,
 	Highlight: HeroHighlight,
 	Subtitle: HeroSubtitle,
+	Actions: HeroActions,
 };
 
 function ShowcaseSectionRoot({ className, children, ...props }: ComponentProps<"section">) {
 	return (
-		<section className={cn("scroll-mt-20 px-4 py-12 sm:px-6 sm:py-16 md:py-20", className)} {...props}>
-			<div className="mx-auto w-full max-w-7xl">{children}</div>
+		<section className={cn("scroll-mt-20 px-4 py-10 sm:px-6 sm:py-14 lg:px-10", className)} {...props}>
+			<div className="mx-auto w-full max-w-[1440px]">{children}</div>
 		</section>
 	);
+}
+
+function ShowcaseSectionHeader({ className, ...props }: ComponentProps<"div">) {
+	return <div className={cn("mb-6 space-y-2 sm:mb-8", className)} {...props} />;
 }
 
 function ShowcaseSectionTitle({ className, ...props }: ComponentProps<"h2">) {
 	return (
 		<h2
 			className={cn(
-				"mb-10 text-center text-3xl font-light tracking-tight break-words text-foreground sm:mb-14 sm:text-4xl md:text-5xl",
+				"font-display text-2xl leading-tight font-semibold break-words text-foreground sm:text-[28px]",
 				className,
 			)}
 			{...props}
@@ -70,55 +92,55 @@ function ShowcaseSectionTitle({ className, ...props }: ComponentProps<"h2">) {
 
 export const ShowcaseSection = {
 	Root: ShowcaseSectionRoot,
+	Header: ShowcaseSectionHeader,
+	Label: SectionLabel,
 	Title: ShowcaseSectionTitle,
 };
 
 function FooterRoot({ className, children, ...props }: ComponentProps<"footer">) {
 	return (
 		<footer
-			className={cn("bg-footer px-4 py-12 text-footer-foreground sm:px-6 sm:py-16", className)}
+			className={cn("bg-footer px-5 py-12 text-footer-foreground sm:px-10 sm:py-16", className)}
 			{...props}
 		>
-			<div className="mx-auto w-full max-w-7xl text-center">{children}</div>
+			<div className="mx-auto flex w-full max-w-[1440px] flex-col items-center gap-6 text-center">
+				{children}
+			</div>
 		</footer>
 	);
 }
 
 function FooterBrand({ logoUrl, alt, invert }: { logoUrl: string; alt: string; invert?: boolean }) {
 	return (
-		<div className="mb-6 flex items-center justify-center sm:mb-8">
-			<Image
-				src={logoUrl}
-				alt={alt}
-				width={200}
-				height={67}
-				className={cn("h-12 w-auto max-w-full sm:h-16", invert && "brightness-0 invert")}
-			/>
-		</div>
+		<Image
+			src={logoUrl}
+			alt={alt}
+			width={200}
+			height={67}
+			className={cn("h-12 w-auto max-w-full sm:h-14", invert && "brightness-0 invert")}
+		/>
 	);
 }
 
 function FooterSocial({ instagramUrl }: { instagramUrl: string }) {
 	if (!instagramUrl) return null;
 	return (
-		<div className="mb-5 flex items-center justify-center gap-3">
-			<a
-				href={instagramUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				aria-label="Instagram"
-				className="inline-flex items-center gap-2 rounded-full bg-footer-foreground/10 px-4 py-2 transition hover:bg-footer-foreground/20"
-			>
-				<Instagram className="size-5" />
-				<span className="text-sm">Instagram</span>
-			</a>
-		</div>
+		<a
+			href={instagramUrl}
+			target="_blank"
+			rel="noopener noreferrer"
+			aria-label="Instagram"
+			className="inline-flex items-center gap-2 rounded-full bg-footer-foreground/15 px-5 py-2.5 text-sm font-extrabold tracking-[0.5px] uppercase transition hover:bg-footer-foreground/25"
+		>
+			<Instagram className="size-5" />
+			Instagram
+		</a>
 	);
 }
 
 function FooterCopyright({ children }: { children: ReactNode }) {
 	if (!children) return null;
-	return <p className="text-xs font-light tracking-wide opacity-70 sm:text-sm">{children}</p>;
+	return <p className="text-xs font-bold tracking-[1px] uppercase opacity-80">{children}</p>;
 }
 
 export const SiteFooter = {

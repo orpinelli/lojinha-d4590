@@ -1,4 +1,5 @@
 import type { ProductDetails as Details } from "@/modules/catalog/domain/product";
+import { SectionLabel } from "@/components/ui/section-label";
 
 /** Structured details list (replaces the old raw-HTML `detailHtml`). */
 export function ProductDetails({
@@ -10,22 +11,19 @@ export function ProductDetails({
 }) {
 	const hasItems = details.items.length > 0;
 	return (
-		<div className="space-y-5 border-t pt-6 sm:space-y-6 sm:pt-8">
-			<h2 className="text-xl font-light tracking-tight text-foreground sm:text-2xl">
-				{(hasItems && details.title) || "Descrição do Produto"}
-			</h2>
+		<div className="space-y-4 rounded-2xl border-2 p-5 sm:p-6">
+			<SectionLabel>{(hasItems && details.title) || "Descrição do produto"}</SectionLabel>
 			{hasItems ? (
-				<ul className="list-disc space-y-2 pl-5 font-light text-muted-foreground">
+				<ul className="space-y-2.5">
 					{details.items.map((item, index) => (
-						<li key={index} className="break-words">
+						<li key={index} className="flex gap-3 text-[15px] font-semibold break-words text-foreground">
+							<span aria-hidden className="mt-2 size-2 shrink-0 rounded-full bg-primary" />
 							{item}
 						</li>
 					))}
 				</ul>
 			) : (
-				<p className="text-base leading-relaxed font-light break-words text-muted-foreground sm:text-lg">
-					{description}
-				</p>
+				<p className="text-base leading-relaxed break-words text-muted-foreground">{description}</p>
 			)}
 		</div>
 	);

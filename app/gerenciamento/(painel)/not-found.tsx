@@ -12,7 +12,7 @@ export default function AdminNotFound() {
 			<EmptyState.Title>Não encontrado</EmptyState.Title>
 			<EmptyState.Description>O item que você procura não existe ou foi excluído.</EmptyState.Description>
 			<EmptyState.Action>
-				<Button asChild variant="outline" className="h-10">
+				<Button asChild variant="outline">
 					<Link href="/gerenciamento">Voltar ao painel</Link>
 				</Button>
 			</EmptyState.Action>

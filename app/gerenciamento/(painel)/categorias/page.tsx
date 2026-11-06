@@ -23,7 +23,7 @@ export default async function CategoriesPage() {
 				<PageHeader.Actions>
 					<CategoryDialog
 						trigger={
-							<Button className="h-10">
+							<Button>
 								<Plus /> Nova categoria
 							</Button>
 						}

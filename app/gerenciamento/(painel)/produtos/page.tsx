@@ -35,7 +35,7 @@ export default async function ProductsPage() {
 					<PageHeader.Description>{products.length} cadastrado(s)</PageHeader.Description>
 				</PageHeader.Content>
 				<PageHeader.Actions>
-					<Button asChild className="h-10">
+					<Button asChild>
 						<Link href="/gerenciamento/produtos/novo">
 							<Plus /> Novo produto
 						</Link>
@@ -66,12 +66,12 @@ export default async function ProductsPage() {
 								</ResourceList.Title>
 								<ResourceList.Meta>
 									<span>{categoryById.get(product.categoryId)?.name ?? "Sem categoria"}</span>
-									<Price cents={product.priceInCents} className="font-medium" />
+									<Price cents={product.priceInCents} className="font-extrabold text-foreground" />
 									{!product.active && <Badge variant="outline">Oculto</Badge>}
 								</ResourceList.Meta>
 							</ResourceList.Content>
 							<ResourceList.Actions>
-								<Button asChild variant="outline" className="h-10 hover:bg-muted hover:text-foreground">
+								<Button asChild variant="outline" size="sm">
 									<Link href={editPath(product.id)}>
 										<Pencil /> Editar
 									</Link>

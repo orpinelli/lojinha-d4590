@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/store/quantity-stepper";
 import { SizeSelect } from "@/components/store/size-select";
+import { Button } from "@/components/ui/button";
 import { useAddToCart } from "@/hooks/use-add-to-cart";
 import { cn } from "@/lib/utils";
 import { requiresSize, type Product } from "@/modules/catalog/domain/product";
@@ -79,7 +79,7 @@ export function ProductPurchaseRoot({
 	);
 }
 
-const labelClass = "block text-sm font-light tracking-wide text-muted-foreground uppercase";
+const labelClass = "block text-sm font-bold tracking-[0.5px] text-label uppercase";
 
 export function ProductPurchaseQuantity() {
 	const { quantity, increase, decrease } = usePurchase();
@@ -103,7 +103,7 @@ export function ProductPurchaseSizes() {
 			<div className="space-y-2 sm:space-y-3">
 				{sizes.map((size, index) => (
 					<div key={index} className="flex items-center gap-2 sm:gap-3">
-						<span className="w-14 shrink-0 text-xs text-muted-foreground sm:w-16 sm:text-sm">
+						<span className="w-14 shrink-0 text-xs font-bold text-label uppercase sm:w-16">
 							Item {index + 1}:
 						</span>
 						<SizeSelect
@@ -120,7 +120,7 @@ export function ProductPurchaseSizes() {
 				))}
 			</div>
 			{attention > 0 && firstMissing >= 0 && (
-				<p role="alert" className="text-sm font-medium text-destructive">
+				<p role="alert" className="text-sm font-bold text-destructive">
 					Escolha o tamanho de cada item.
 				</p>
 			)}
@@ -131,13 +131,9 @@ export function ProductPurchaseSizes() {
 export function ProductPurchaseSubmit() {
 	const { product, quantity, submit } = usePurchase();
 	return (
-		<Button
-			size="lg"
-			onClick={submit}
-			className="h-auto w-full bg-primary py-4 text-sm font-light tracking-wide whitespace-normal text-primary-foreground uppercase transition-all duration-300 hover:bg-primary-hover sm:py-5"
-		>
-			<ShoppingCart className="size-4" />
-			Adicionar ao Carrinho - {formatPrice(product.priceInCents * quantity)}
+		<Button block size="lg" onClick={submit} className="min-h-14 text-base">
+			<ShoppingCart className="size-5" strokeWidth={2.5} />
+			Adicionar ao carrinho · {formatPrice(product.priceInCents * quantity)}
 		</Button>
 	);
 }

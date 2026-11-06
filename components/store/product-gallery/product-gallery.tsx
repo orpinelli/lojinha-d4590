@@ -42,7 +42,7 @@ export function ProductGalleryRoot({
 export function ProductGalleryMain() {
 	const { images, alt, selected } = useGallery();
 	return (
-		<div className="relative aspect-square w-full bg-muted">
+		<div className="relative aspect-square w-full overflow-hidden rounded-2xl border-2 bg-muted">
 			<Image
 				src={images[selected] ?? images[0]}
 				alt={alt}
@@ -65,8 +65,8 @@ function Thumbnail({ image, index }: { image: string; index: number }) {
 			aria-label={`Ver imagem ${index + 1}`}
 			aria-pressed={active}
 			className={cn(
-				"relative aspect-square w-full overflow-hidden bg-muted ring-inset",
-				active ? "ring-2 ring-primary" : "hover:ring-1 hover:ring-border",
+				"relative aspect-square w-full overflow-hidden rounded-xl border-2 bg-muted transition-colors",
+				active ? "border-primary" : "hover:border-stroke",
 			)}
 		>
 			<Image src={image} alt="" fill sizes="(max-width: 768px) 25vw, 12vw" className="object-cover" />

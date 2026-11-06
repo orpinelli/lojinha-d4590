@@ -24,10 +24,11 @@
   --muted-foreground: oklch(0.45 0 0);
   --accent: var(--primary);
   --accent-foreground: var(--primary-foreground);
-  --destructive: oklch(0.6 0.25 25);
+  --destructive: #ff4b4b;
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.88 0 0);
+  --destructive-shadow: color-mix(in oklab, var(--destructive) 80%, black);
+  --border: #e5e5e5;
+  --input: #e5e5e5;
   --ring: var(--primary);
   --footer: oklch(0 0 0);
   --footer-foreground: oklch(1 0 0);
@@ -46,6 +47,14 @@
   --sidebar-border: oklch(0.9 0 0);
   --sidebar-ring: var(--primary);
   --swiper-theme-color: var(--primary);
+
+  /* Design tokens (playful 3D style) shared by the store and the admin.
+     Brand colors stay in the admin-managed theme; these are support colors. */
+  --primary-shadow: color-mix(in oklab, var(--primary) 80%, black);
+  --label: #afafaf;
+  --link: #1cb0f6;
+  --stroke: #cfcfcf;
+  --night: #100f3e;
 }
 
 .dark {
@@ -71,8 +80,15 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-nunito), "DIN Round Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, sans-serif;
+  --color-primary-shadow: var(--primary-shadow);
+  --color-destructive-shadow: var(--destructive-shadow);
+  --color-label: var(--label);
+  --color-link: var(--link);
+  --color-stroke: var(--stroke);
+  --color-night: var(--night);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
