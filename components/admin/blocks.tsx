@@ -178,24 +178,75 @@ export const ResourceList = {
 	),
 };
 
+/** Filters as links: the choice lives in the URL (survives reloads, shareable). */
+export const FilterTabs = {
+	Root: ({ className, ...props }: ComponentProps<"nav">) => (
+		<nav
+			className={cn(
+				"-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pt-1 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0",
+				className,
+			)}
+			{...props}
+		/>
+	),
+	Link: ({
+		href,
+		active,
+		count,
+		children,
+	}: {
+		href: string;
+		active: boolean;
+		count?: number;
+		children: ReactNode;
+	}) => (
+		<Link
+			href={href}
+			aria-current={active ? "page" : undefined}
+			className={cn(
+				"inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border-2 border-b-4 px-3 text-[13px] font-extrabold tracking-[0.5px] uppercase transition-[background-color,border-color,transform] active:translate-y-0.5 active:border-b-2",
+				active
+					? "border-primary bg-primary/10 text-primary"
+					: "bg-background text-label hover:bg-muted hover:text-foreground",
+			)}
+		>
+			{children}
+			{count !== undefined && (
+				<span className="rounded-md bg-current/10 px-1.5 py-0.5 text-[11px] tabular-nums">{count}</span>
+			)}
+		</Link>
+	),
+};
+
 /** "Pressable" card: thicker bottom border that sinks on click (3D, like buttons). */
 export function ShortcutCard({
 	href,
 	icon,
 	title,
 	description,
+	highlight = false,
 }: {
 	href: string;
 	icon: ReactNode;
 	title: string;
 	description: string;
+	/** Calls attention (e.g. new orders waiting). */
+	highlight?: boolean;
 }) {
 	return (
 		<Link
 			href={href}
-			className="group flex items-center gap-4 rounded-2xl border-2 border-b-4 bg-background p-4 transition-[background-color,border-color,transform] hover:border-primary/40 hover:bg-primary/5 active:translate-y-0.5 active:border-b-2"
+			className={cn(
+				"group flex items-center gap-4 rounded-2xl border-2 border-b-4 p-4 transition-[background-color,border-color,transform] hover:border-primary/40 hover:bg-primary/5 active:translate-y-0.5 active:border-b-2",
+				highlight ? "border-primary/40 bg-primary/5" : "bg-background",
+			)}
 		>
-			<span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary [&_svg]:size-5">
+			<span
+				className={cn(
+					"flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5",
+					highlight ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary",
+				)}
+			>
 				{icon}
 			</span>
 			<span className="min-w-0 flex-1">

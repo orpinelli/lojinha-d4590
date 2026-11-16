@@ -35,8 +35,11 @@ test("adiciona produtos, revisa no /carrinho e finaliza pelo WhatsApp", async ({
 	// Confirm: WhatsApp opens with the order written and the cart is emptied
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
 	await expect(page.getByRole("heading", { name: "Pedido pronto!" })).toBeVisible();
+	const code = (await page.getByText(/^#[0-9A-Z]{6}$/).textContent())?.slice(1);
+	expect(code).toMatch(/^[0-9A-Z]{6}$/);
 	await expect.poll(() => opened.length).toBe(1);
 	const message = whatsappText(opened[0]);
+	expect(message).toContain(`Pedido #${code}`);
 	expect(message).toContain("2x Camiseta rosa (Tamanho: M)");
 	expect(message).toContain("Total: R$ 120,00");
 	await expect(page.getByRole("link", { name: "Ver carrinho", exact: true })).toBeVisible();

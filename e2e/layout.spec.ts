@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalScroll, seedCart } from "./helpers";
+import { expectNoHorizontalScroll, findOrder, loginAsAdmin, randomOrderCode, seedCart } from "./helpers";
 
 /** Runs on desktop and on a phone (see playwright.config.ts). */
 test("páginas da loja não vazam para os lados", async ({ page }) => {
@@ -13,4 +13,25 @@ test("páginas da loja não vazam para os lados", async ({ page }) => {
 		await expectNoHorizontalScroll(page);
 	}
 	await expect(page.getByRole("complementary", { name: "Resumo do pedido" })).toBeVisible();
+});
+
+test("telas de pedidos do painel não vazam para os lados", async ({ page }) => {
+	const code = randomOrderCode();
+	await page.request.post("/api/orders", {
+		data: { code, items: [{ productId: "10", size: "GG", quantity: 12 }, { productId: "1", quantity: 1 }] },
+		headers: { "x-real-ip": "10.40.0.1" },
+	});
+	await loginAsAdmin(page.request);
+	const order = await findOrder(page.request, code);
+	expect(order).toBeDefined();
+	for (const path of [
+		"/gerenciamento",
+		"/gerenciamento/pedidos",
+		`/gerenciamento/pedidos/${order?.id}`,
+		`/gerenciamento/pedidos/${order?.id}/editar`,
+	]) {
+		await page.goto(path);
+		await expect(page.locator("main")).toBeVisible();
+		await expectNoHorizontalScroll(page);
+	}
 });

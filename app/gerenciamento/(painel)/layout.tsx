@@ -1,5 +1,6 @@
 import type React from "react";
 import {
+	ClipboardList,
 	ExternalLink,
 	FileText,
 	GalleryHorizontalEnd,
@@ -25,6 +26,9 @@ export default async function AdminPanelLayout({ children }: { children: React.R
 				<AdminShell.Nav>
 					<AdminShell.NavLink href="/gerenciamento" exact icon={<LayoutDashboard />}>
 						Visão geral
+					</AdminShell.NavLink>
+					<AdminShell.NavLink href="/gerenciamento/pedidos" icon={<ClipboardList />}>
+						Pedidos
 					</AdminShell.NavLink>
 					<AdminShell.NavLink href="/gerenciamento/vitrines" icon={<GalleryHorizontalEnd />}>
 						Vitrines

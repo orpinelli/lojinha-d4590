@@ -113,6 +113,11 @@ const DELETABLE = {
 		success: "Vitrine excluída.",
 		remove: adminApi.deleteShowcase,
 	},
+	order: {
+		title: "Excluir pedido?",
+		success: "Pedido excluído.",
+		remove: adminApi.deleteOrder,
+	},
 } as const;
 
 /** Delete with confirmation for any admin resource. */

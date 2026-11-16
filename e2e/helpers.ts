@@ -1,6 +1,21 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import { E2E_ADMIN } from "./env";
 
+/** A valid order code (same alphabet the store uses). */
+export function randomOrderCode(): string {
+	const alphabet = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+	return Array.from({ length: 6 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+}
+
+type ApiOrder = { id: string; code: string; status: string; totalInCents: number };
+
+/** Finds an order by code through the admin API (the caller must be logged in). */
+export async function findOrder(request: APIRequestContext, code: string): Promise<ApiOrder | undefined> {
+	const response = await request.get("/api/orders");
+	const body = (await response.json()) as { data?: ApiOrder[] };
+	return body.data?.find((order) => order.code === code);
+}
+
 /** Logs in through the API; `page.request` shares the cookies with the page. */
 export async function loginAsAdmin(request: APIRequestContext) {
 	const response = await request.post("/api/auth/login", { data: E2E_ADMIN });

@@ -2,6 +2,7 @@ import "server-only";
 import { createAuthService } from "@/modules/auth/application/auth-service";
 import { createCatalogService } from "@/modules/catalog/application/catalog-service";
 import { createMediaService } from "@/modules/media/application/media-service";
+import { createOrderService } from "@/modules/orders/application/order-service";
 import { createSettingsService } from "@/modules/settings/application/settings-service";
 import { createShowcaseService } from "@/modules/showcase/application/showcase-service";
 import { resolveDataProvider } from "@/lib/supabase/config";
@@ -22,11 +23,12 @@ export function getDataProviderName() {
 	return getProvider().name;
 }
 
-function buildServices({ catalog, settings, showcases }: PublicInfrastructure) {
+function buildServices({ catalog, settings, showcases, orders }: PublicInfrastructure) {
 	return {
 		catalog: createCatalogService(catalog),
 		settings: createSettingsService(settings),
 		showcases: createShowcaseService({ ...catalog, showcases }),
+		orders: createOrderService({ orders, products: catalog.products }),
 	};
 }
 

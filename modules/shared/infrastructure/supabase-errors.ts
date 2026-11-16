@@ -3,6 +3,7 @@ import {
 	DomainError,
 	ForbiddenError,
 	RateLimitError,
+	StorageUnavailableError,
 	UnauthorizedError,
 	ValidationError,
 } from "../domain/errors";
@@ -22,6 +23,11 @@ export function toDomainError(error: SupabaseLikeError): Error {
 			return new ValidationError("Os dados não atendem às regras do banco.");
 		case "42501":
 			return new ForbiddenError();
+		case "42P01":
+		case "PGRST205":
+			return new StorageUnavailableError(
+				"O banco de dados ainda não tem esta tabela. Aplique as migrações de supabase/migrations.",
+			);
 		case "PGRST301":
 		case "PGRST302":
 			return new UnauthorizedError();

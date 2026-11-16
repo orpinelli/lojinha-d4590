@@ -253,11 +253,15 @@ export function CartPlaced() {
 			<span className="mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
 				<CircleCheck className="size-8" strokeWidth={2.5} />
 			</span>
-			<div className="space-y-2">
+			<div className="space-y-3">
 				<h1 className="font-display text-3xl font-semibold text-foreground">Pedido pronto!</h1>
+				<p className="inline-flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 font-extrabold tracking-[1px] text-primary">
+					<span className="text-xs uppercase">Código</span>
+					<span className="font-display text-xl tracking-[2px]">#{placed.code}</span>
+				</p>
 				<p className="text-[15px] text-muted-foreground">
 					Abrimos o WhatsApp com o seu pedido. Toque em enviar para a loja receber e combinar o
-					pagamento e a entrega com você.
+					pagamento e a entrega com você. Se precisar falar sobre ele, informe o código.
 				</p>
 			</div>
 			<ul className="divide-y-2 rounded-2xl border-2 text-left">

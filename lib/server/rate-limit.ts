@@ -67,3 +67,17 @@ export const loginLimiter = {
 		perClient.reset(clientKey);
 	},
 };
+
+// Public order endpoint: every request counts (not only failures).
+const ordersPerClient = createFailureLimiter({ maxFailures: 20, windowMs: 10 * 60_000 });
+const ordersGlobal = createFailureLimiter({ maxFailures: 600, windowMs: 10 * 60_000 });
+
+/** Throws RateLimitError when a visitor (or everyone together) sends too many orders. */
+export const orderLimiter = {
+	hit(clientKey: string) {
+		ordersGlobal.assertAllowed(GLOBAL_KEY);
+		ordersPerClient.assertAllowed(clientKey);
+		ordersGlobal.registerFailure(GLOBAL_KEY);
+		ordersPerClient.registerFailure(clientKey);
+	},
+};

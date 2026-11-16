@@ -8,6 +8,9 @@ import type { CatalogRepositories } from "@/modules/catalog/domain/repositories"
 import { createLocalCatalogRepositories } from "@/modules/catalog/infrastructure/local-catalog-repositories";
 import { createSupabaseCatalogRepositories } from "@/modules/catalog/infrastructure/supabase-catalog-repositories";
 import type { MediaStorage } from "@/modules/media/domain/media";
+import type { OrderRepository } from "@/modules/orders/domain/order";
+import { createLocalOrderRepository } from "@/modules/orders/infrastructure/local-order-repository";
+import { createSupabaseOrderRepository } from "@/modules/orders/infrastructure/supabase-order-repository";
 import {
 	createLocalMediaStorage,
 	type LocalMediaStorage,
@@ -34,6 +37,8 @@ export type PublicInfrastructure = {
 	catalog: CatalogRepositories;
 	settings: SettingsRepository;
 	showcases: ShowcaseRepository;
+	/** Public side can only record new orders; the request side manages them. */
+	orders: OrderRepository;
 };
 
 export type RequestInfrastructure = PublicInfrastructure & {
@@ -75,6 +80,7 @@ export function createLocalProvider(): InfrastructureProvider {
 		catalog: createLocalCatalogRepositories(path.join(root, "catalog.json")),
 		settings: createLocalSettingsRepository(path.join(root, "settings.json")),
 		showcases: createLocalShowcaseRepository(path.join(root, "showcases.json")),
+		orders: createLocalOrderRepository(path.join(root, "orders.json")),
 	};
 	const localMedia = createLocalMediaStorage(path.join(root, "uploads"));
 
@@ -98,6 +104,7 @@ export function createSupabaseProvider(config: SupabaseConfig): InfrastructurePr
 		catalog: createSupabaseCatalogRepositories(publicClient),
 		settings: createSupabaseSettingsRepository(publicClient),
 		showcases: createSupabaseShowcaseRepository(publicClient),
+		orders: createSupabaseOrderRepository(publicClient),
 	};
 
 	return {
@@ -109,6 +116,7 @@ export function createSupabaseProvider(config: SupabaseConfig): InfrastructurePr
 				catalog: createSupabaseCatalogRepositories(client),
 				settings: createSupabaseSettingsRepository(client),
 				showcases: createSupabaseShowcaseRepository(client),
+				orders: createSupabaseOrderRepository(client),
 				media: createSupabaseMediaStorage(client),
 				auth: createSupabaseAuthGateway(client),
 			};

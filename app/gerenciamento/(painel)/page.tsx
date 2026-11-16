@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+	ClipboardList,
 	Database,
 	FileText,
 	GalleryHorizontalEnd,
@@ -16,11 +17,16 @@ import { requireAdminSession } from "@/lib/server/session";
 
 export default async function DashboardPage() {
 	const session = await requireAdminSession();
-	const { catalog, showcases } = await getRequestServices();
-	const [products, categories, showcaseList] = await Promise.all([
+	const { catalog, showcases, orders } = await getRequestServices();
+	const [products, categories, showcaseList, newOrders] = await Promise.all([
 		catalog.listProducts(),
 		catalog.listCategories(),
 		showcases.listWithCounts(),
+		// Without the orders table yet (migration pending) the dashboard still opens.
+		orders.overview().then(
+			({ counts }) => counts.new,
+			() => 0,
+		),
 	]);
 	const active = products.filter((product) => product.active).length;
 	const stats = [
@@ -47,6 +53,18 @@ export default async function DashboardPage() {
 				</PageHeader.Actions>
 			</PageHeader.Root>
 
+			{newOrders > 0 && (
+				<div className="mb-6">
+					<ShortcutCard
+						highlight
+						href="/gerenciamento/pedidos?status=new"
+						icon={<ClipboardList />}
+						title={newOrders === 1 ? "1 pedido novo" : `${newOrders} pedidos novos`}
+						description="Confira a conversa no WhatsApp e atualize o status."
+					/>
+				</div>
+			)}
+
 			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
 				{stats.map((stat) => (
 					<StatCard.Root key={stat.label}>
@@ -58,6 +76,7 @@ export default async function DashboardPage() {
 
 			<SectionLabel className="mt-10 mb-4">Atalhos</SectionLabel>
 			<div className="grid gap-3 md:grid-cols-2">
+				<ShortcutCard href="/gerenciamento/pedidos" icon={<ClipboardList />} title="Pedidos" description="Histórico do que foi enviado pelo WhatsApp." />
 				<ShortcutCard href="/gerenciamento/vitrines" icon={<GalleryHorizontalEnd />} title="Vitrines" description="Seções da página inicial e a ordem delas." />
 				<ShortcutCard href="/gerenciamento/produtos" icon={<Package />} title="Produtos" description="Preços, fotos, tamanhos e descrições." />
 				<ShortcutCard href="/gerenciamento/categorias" icon={<Tags />} title="Categorias" description="Organize os produtos por tipo." />

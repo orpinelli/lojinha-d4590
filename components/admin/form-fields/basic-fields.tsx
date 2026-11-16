@@ -271,7 +271,11 @@ export function ChoiceField({
 					<div
 						role="radiogroup"
 						aria-label={label}
-						className={cn("grid gap-3", options.length > 2 ? "sm:grid-cols-3" : "sm:grid-cols-2")}
+						className={cn(
+							"grid gap-3",
+							options.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2",
+							options.length === 4 && "xl:grid-cols-4",
+						)}
 					>
 						{options.map((option) => (
 							<label
