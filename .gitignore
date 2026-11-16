@@ -33,3 +33,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# skills: o conteúdo fica em .agents/skills; estes atalhos apontam para
+# caminhos absolutos da máquina de quem instalou e quebrariam em outro lugar
+/.aider-desk/
+/data/skills/
+
+# Claude Code: permissões locais de cada pessoa (podem conter comandos com segredos)
+.claude/settings.local.json
