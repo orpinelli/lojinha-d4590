@@ -141,7 +141,9 @@ test("vendas do ano: quantidade e valor de cada produto, sem os cancelados", asy
 
 	await page.goto("/gerenciamento");
 	await page.getByRole("navigation", { name: "Painel" }).getByRole("link", { name: "Vendas" }).click();
-	await expect(page.getByRole("heading", { name: /^Vendas de \d{4}$/ })).toBeVisible();
+	// Store year: July → June (e.g. 2026-27), the current one first
+	await expect(page.getByRole("heading", { name: /^Vendas de \d{4}-\d{2}$/ })).toBeVisible();
+	await expect(page.locator("main")).toContainText(/De 1º de julho de \d{4} a 30 de junho de \d{4}/);
 	const tirante = page
 		.getByRole("list", { name: "Produtos vendidos" })
 		.getByRole("listitem")
@@ -150,4 +152,14 @@ test("vendas do ano: quantidade e valor de cada produto, sem os cancelados", asy
 	await expect(tirante).toContainText("R$ 60,00");
 	await expect(page.getByRole("list", { name: "Recebido por meio de pagamento" })).toContainText("Pix");
 	await expect(page.locator("main")).toContainText(/cancelados? fic/);
+
+	// Filter: Total + the current year and the next 3, always
+	const filter = page.getByRole("navigation", { name: "Escolher o período" });
+	const yearLinks = filter.getByRole("link", { name: /^\d{4}-\d{2}$/ });
+	expect(await yearLinks.count()).toBeGreaterThanOrEqual(4);
+	await filter.getByRole("link", { name: "Total" }).click();
+	await expect(page.getByRole("heading", { name: "Vendas de todos os anos" })).toBeVisible();
+	await expect(tirante).toContainText(/5\s*unidades/);
+	await yearLinks.last().click();
+	await expect(page.getByText(/^Nenhuma venda em \d{4}-\d{2}$/)).toBeVisible();
 });

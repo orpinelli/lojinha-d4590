@@ -11,10 +11,17 @@ export function formatDateTime(iso: string): string {
 	return Number.isNaN(date.getTime()) ? "" : dateTime.format(date);
 }
 
-const yearFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Sao_Paulo" });
+const yearMonthFormat = new Intl.DateTimeFormat("en-US", {
+	year: "numeric",
+	month: "numeric",
+	timeZone: "America/Sao_Paulo",
+});
 
-/** Year in Brasília time: an order at 22:00 on Dec 31 belongs to that year, not the next one. */
-export function yearInBrazil(iso: string): number {
+/** Year and month (1–12) in Brasília time, or null for an invalid date. */
+export function brazilYearMonth(iso: string): { year: number; month: number } | null {
 	const date = new Date(iso);
-	return Number.isNaN(date.getTime()) ? Number.NaN : Number(yearFormat.format(date));
+	if (Number.isNaN(date.getTime())) return null;
+	const parts = yearMonthFormat.formatToParts(date);
+	const part = (type: "year" | "month") => Number(parts.find((item) => item.type === type)?.value);
+	return { year: part("year"), month: part("month") };
 }

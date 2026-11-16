@@ -4,7 +4,9 @@ Loja do Rotaract Distrito 4590 com painel de gerenciamento em `/gerenciamento`:
 pedidos, vitrines, produtos, imagens, preços, categorias, logo, cores, textos e
 contato são todos editáveis pelo painel.
 
-**Fotos do produto**: com o mouse, a foto aumenta e acompanha o cursor; um
+**Fotos do produto** aparecem sempre inteiras, sem corte, qualquer que seja o
+formato (a moldura é 4:5, o formato da maioria das fotos da loja). Com o
+mouse, a foto aumenta e acompanha o cursor; um
 clique (ou toque no celular) abre a tela cheia, com pinça ou toque duplo para
 ampliar, arrastar para ver os detalhes e deslizar entre as fotos.
 
@@ -22,9 +24,12 @@ detalhes, mudar o status e o pagamento com um toque (Não pago, Pix, Dinheiro,
 Cartão de crédito, Cartão de débito, Transferência ou Outro), editar cliente,
 observações e itens (o total é recalculado) e excluir.
 
-**Vendas** mostra o ano escolhido (no horário de Brasília), sem os pedidos
-cancelados: total vendido, recebido, a receber, itens vendidos, cada produto
-com a quantidade (e os tamanhos) e o valor, e o recebido por meio de pagamento.
+**Vendas** usa o ano da loja, de **1º de julho a 30 de junho** (ex.: 2026-27 =
+1º/07/2026 a 30/06/2027, no horário de Brasília), ou **Total** (todos os anos).
+O filtro mostra sozinho todo o histórico e sempre os 3 anos seguintes ao atual.
+Sem os pedidos cancelados: total vendido, recebido, a receber, itens vendidos,
+cada produto com a quantidade (e os tamanhos) e o valor, e o recebido por meio
+de pagamento.
 
 **Vitrines** são as seções da página inicial, uma embaixo da outra, na ordem
 definida arrastando no painel. Cada vitrine tem título, formato (Carrossel,
@@ -63,6 +68,11 @@ npm run dev                  # loja: http://localhost:3000  painel: /gerenciamen
 temporários e um login de teste descartável (nada toca o Supabase). Usa o
 Google Chrome instalado; sem ele, rode `npx playwright install chromium` e
 troque `channel: "chrome"` em `playwright.config.ts`.
+
+> Os testes de navegador montam o site com dados de exemplo na pasta `.next`.
+> Antes de um `npm run build` com os dados reais na sua máquina, apague a pasta
+> `.next` (ela se refaz sozinha), senão a página inicial pode sair com os
+> produtos de exemplo. Na Vercel isso não acontece.
 
 ## Arquitetura
 

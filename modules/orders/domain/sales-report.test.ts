@@ -1,7 +1,12 @@
 /// <reference types="vitest/globals" />
-import { yearInBrazil } from "@/modules/shared/domain/dates";
 import type { Order, OrderItem } from "./order";
-import { buildSalesReport, salesYears } from "./sales-report";
+import {
+	buildSalesReport,
+	salesYearLabel,
+	salesYearOf,
+	salesYearRange,
+	salesYears,
+} from "./sales-report";
 
 let sequence = 0;
 function order(createdAt: string, items: OrderItem[], extra: Partial<Order> = {}): Order {
@@ -37,20 +42,41 @@ const pin = (quantity: number, name = "Pin"): OrderItem => ({
 	unitPriceInCents: 1500,
 });
 
+describe("store year (July → June)", () => {
+	it("starts on July 1 in Brasília time", () => {
+		expect(salesYearOf("2026-07-01T03:00:00Z")).toBe(2026); // 00:00 of Jul 1 in Brasília
+		expect(salesYearOf("2026-07-01T02:59:00Z")).toBe(2025); // 23:59 of Jun 30 in Brasília
+		expect(salesYearOf("2027-06-30T23:00:00Z")).toBe(2026); // 20:00 of Jun 30, 2027
+		expect(salesYearOf("2026-01-15T12:00:00Z")).toBe(2025);
+	});
+
+	it("is shown as 2026-27, from July 1 to June 30", () => {
+		expect(salesYearLabel(2026)).toBe("2026-27");
+		expect(salesYearLabel(2099)).toBe("2099-00");
+		expect(salesYearRange(2026)).toBe("1º de julho de 2026 a 30 de junho de 2027");
+	});
+
+	it("offers the whole history plus 3 years ahead", () => {
+		expect(salesYears([], 2026)).toEqual([2026, 2027, 2028, 2029]);
+		const old = [order("2025-03-10T12:00:00Z", [pin(1)])]; // year 2024-25
+		expect(salesYears(old, 2028)).toEqual([2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031]);
+	});
+});
+
 describe("sales report", () => {
 	// newest first, as the repository returns them
 	const orders = [
-		order("2026-11-10T15:00:00Z", [shirt("G", 1), pin(2, "Pin Thor")], { payment: "pix" }),
+		order("2027-03-10T15:00:00Z", [shirt("G", 1), pin(2, "Pin Thor")], { payment: "pix" }),
 		order("2026-10-01T15:00:00Z", [shirt("M", 2), shirt("P", 1)], { payment: "cash" }),
 		order("2026-09-01T15:00:00Z", [pin(3)]),
 		order("2026-08-01T15:00:00Z", [shirt("M", 5)], { status: "canceled", payment: "pix" }),
-		order("2025-12-20T15:00:00Z", [pin(1)]),
+		order("2026-06-20T15:00:00Z", [pin(1)]), // still 2025-26
 	];
-	const report = buildSalesReport(orders, 2026, yearInBrazil);
+	const report = buildSalesReport(orders, { kind: "year", start: 2026 });
 
-	it("adds up the year without canceled orders", () => {
+	it("adds up the store year without canceled orders", () => {
 		expect(report).toMatchObject({
-			year: 2026,
+			period: { kind: "year", start: 2026 },
 			orders: 3,
 			canceledOrders: 1,
 			units: 9,
@@ -69,6 +95,8 @@ describe("sales report", () => {
 
 	it("groups each product with its units, money and sizes in the usual order", () => {
 		expect(report.products).toEqual([
+			// most recent name wins
+			{ key: "4", productId: "4", name: "Pin Thor", units: 5, revenueInCents: 7500, sizes: [] },
 			{
 				key: "12",
 				productId: "12",
@@ -81,18 +109,12 @@ describe("sales report", () => {
 					{ size: "G", units: 1 },
 				],
 			},
-			// most recent name wins
-			{ key: "4", productId: "4", name: "Pin Thor", units: 5, revenueInCents: 7500, sizes: [] },
-		].sort((a, b) => b.units - a.units));
+		]);
 	});
 
-	it("uses Brasília time: 22h on Dec 31 still belongs to that year", () => {
-		const newYearsEve = [order("2027-01-01T01:00:00Z", [pin(1)])];
-		expect(buildSalesReport(newYearsEve, 2026, yearInBrazil).orders).toBe(1);
-		expect(buildSalesReport(newYearsEve, 2027, yearInBrazil).orders).toBe(0);
-	});
-
-	it("offers the years that have orders plus the current one", () => {
-		expect(salesYears(orders, 2027, yearInBrazil)).toEqual([2027, 2026, 2025]);
+	it("total: every year together", () => {
+		const total = buildSalesReport(orders, { kind: "all" });
+		expect(total).toMatchObject({ orders: 4, canceledOrders: 1, units: 10 });
+		expect(buildSalesReport(orders, { kind: "year", start: 2025 }).orders).toBe(1);
 	});
 });

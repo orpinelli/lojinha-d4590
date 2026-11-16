@@ -7,24 +7,29 @@ import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
 import { productCover } from "@/modules/catalog/domain/product";
 import { ORDER_PAYMENT_LABELS } from "@/modules/orders/domain/order";
-import type { ProductSales, SalesReport } from "@/modules/orders/domain/sales-report";
+import {
+	salesYearLabel,
+	salesYearRange,
+	type ProductSales,
+	type SalesReport,
+} from "@/modules/orders/domain/sales-report";
 import { StorageUnavailableError } from "@/modules/shared/domain/errors";
 import { formatPrice } from "@/modules/shared/domain/money";
 
 const SALES_PATH = "/gerenciamento/vendas";
+/** `?ano=total` shows every year; `?ano=2026` the store year 2026-27. */
+const ALL_YEARS = "total";
 
 type Props = { searchParams: Promise<{ ano?: string | string[] }> };
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-function Header({ year }: { year?: number }) {
+function Header({ title, description }: { title: string; description: string }) {
 	return (
 		<PageHeader.Root>
 			<PageHeader.Content>
-				<PageHeader.Title>Vendas{year ? ` de ${year}` : ""}</PageHeader.Title>
-				<PageHeader.Description>
-					Somente pedidos que não foram cancelados, com os valores registrados em cada um.
-				</PageHeader.Description>
+				<PageHeader.Title>{title}</PageHeader.Title>
+				<PageHeader.Description>{description}</PageHeader.Description>
 			</PageHeader.Content>
 		</PageHeader.Root>
 	);
@@ -81,17 +86,18 @@ function ProductsList({ report, images }: { report: SalesReport; images: Map<str
 export default async function SalesPage({ searchParams }: Props) {
 	await requireAdminSession();
 	const { ano } = await searchParams;
-	const requested = typeof ano === "string" ? Number.parseInt(ano, 10) : undefined;
+	const requested = typeof ano === "string" ? Number.parseInt(ano, 10) : Number.NaN;
+	const selection = ano === ALL_YEARS ? "all" : Number.isFinite(requested) ? requested : undefined;
 	const { orders, catalog } = await getRequestServices();
 
 	let data: Awaited<ReturnType<typeof orders.salesReport>>;
 	try {
-		data = await orders.salesReport(Number.isFinite(requested) ? requested : undefined);
+		data = await orders.salesReport(selection);
 	} catch (error) {
 		if (!(error instanceof StorageUnavailableError)) throw error;
 		return (
 			<>
-				<Header />
+				<Header title="Vendas" description="Total do ano e quanto vendeu de cada produto." />
 				<EmptyState.Root>
 					<EmptyState.Icon>
 						<DatabaseZap />
@@ -103,7 +109,8 @@ export default async function SalesPage({ searchParams }: Props) {
 		);
 	}
 
-	const { report, years } = data;
+	const { report, years, currentYear } = data;
+	const { period } = report;
 	const products = await catalog.listProducts();
 	const images = new Map(products.map((product) => [product.id, productCover(product)]));
 	const stats = [
@@ -113,28 +120,43 @@ export default async function SalesPage({ searchParams }: Props) {
 		{ label: "Itens vendidos", value: report.units },
 	];
 
+	const title = period.kind === "all" ? "Vendas de todos os anos" : `Vendas de ${salesYearLabel(period.start)}`;
+	const description =
+		period.kind === "all"
+			? "Desde o primeiro pedido. Pedidos cancelados ficam de fora."
+			: `De ${salesYearRange(period.start)}. Pedidos cancelados ficam de fora.`;
+
 	return (
 		<>
-			<Header year={report.year} />
+			<Header title={title} description={description} />
 
-			{years.length > 1 && (
-				<FilterTabs.Root aria-label="Escolher o ano">
-					{years.map((year) => (
-						<FilterTabs.Link key={year} href={`${SALES_PATH}?ano=${year}`} active={year === report.year}>
-							{year}
-						</FilterTabs.Link>
-					))}
-				</FilterTabs.Root>
-			)}
+			<FilterTabs.Root aria-label="Escolher o período">
+				<FilterTabs.Link href={`${SALES_PATH}?ano=${ALL_YEARS}`} active={period.kind === "all"}>
+					Total
+				</FilterTabs.Link>
+				{years.map((year) => (
+					<FilterTabs.Link
+						key={year}
+						href={`${SALES_PATH}?ano=${year}`}
+						active={period.kind === "year" && period.start === year}
+					>
+						{salesYearLabel(year)}
+					</FilterTabs.Link>
+				))}
+			</FilterTabs.Root>
 
 			{report.orders === 0 ? (
 				<EmptyState.Root>
 					<EmptyState.Icon>
 						<ChartColumn />
 					</EmptyState.Icon>
-					<EmptyState.Title>Nenhuma venda em {report.year}</EmptyState.Title>
+					<EmptyState.Title>
+						{period.kind === "all" ? "Nenhuma venda ainda" : `Nenhuma venda em ${salesYearLabel(period.start)}`}
+					</EmptyState.Title>
 					<EmptyState.Description>
-						Os pedidos aparecem aqui assim que alguém finalizar o carrinho pelo WhatsApp.
+						{period.kind === "year" && period.start > currentYear
+							? `Esse ano começa em 1º de julho de ${period.start}.`
+							: "Os pedidos aparecem aqui assim que alguém finalizar o carrinho pelo WhatsApp."}
 					</EmptyState.Description>
 				</EmptyState.Root>
 			) : (

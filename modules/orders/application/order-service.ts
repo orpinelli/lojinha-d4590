@@ -1,6 +1,5 @@
 import type { ProductRepository } from "@/modules/catalog/domain/repositories";
 import { ConflictError, NotFoundError, ValidationError } from "@/modules/shared/domain/errors";
-import { yearInBrazil } from "@/modules/shared/domain/dates";
 import { parseInput } from "@/modules/shared/domain/validation";
 import {
 	ORDER_STATUSES,
@@ -11,7 +10,13 @@ import {
 	type OrderStatus,
 } from "../domain/order";
 import { checkoutInputSchema, orderDetailsSchema, orderPatchSchema } from "../domain/order-schemas";
-import { buildSalesReport, salesYears, type SalesReport } from "../domain/sales-report";
+import {
+	buildSalesReport,
+	salesYearOf,
+	salesYears,
+	type SalesPeriod,
+	type SalesReport,
+} from "../domain/sales-report";
 
 export type OrdersOverview = {
 	/** Newest first, already filtered by status when one was given. */
@@ -88,15 +93,20 @@ export function createOrderService({ orders, products }: Dependencies) {
 		get,
 
 		/**
-		 * Sales of a year (Brasília calendar), without canceled orders. An unknown
-		 * or missing year shows the current one.
+		 * Sales of a store year (July → June) or of every year ("all"), without
+		 * canceled orders. An unknown or missing year shows the current one.
 		 */
-		async salesReport(year?: number): Promise<{ report: SalesReport; years: number[] }> {
+		async salesReport(
+			selection?: "all" | number,
+		): Promise<{ report: SalesReport; years: number[]; currentYear: number }> {
 			const all = await orders.list();
-			const currentYear = yearInBrazil(new Date().toISOString());
-			const years = salesYears(all, currentYear, yearInBrazil);
-			const selected = year !== undefined && years.includes(year) ? year : currentYear;
-			return { report: buildSalesReport(all, selected, yearInBrazil), years };
+			const currentYear = salesYearOf(new Date().toISOString());
+			const years = salesYears(all, currentYear);
+			const period: SalesPeriod =
+				selection === "all"
+					? { kind: "all" }
+					: { kind: "year", start: selection !== undefined && years.includes(selection) ? selection : currentYear };
+			return { report: buildSalesReport(all, period), years, currentYear };
 		},
 
 		async update(id: string, rawInput: unknown): Promise<Order> {
