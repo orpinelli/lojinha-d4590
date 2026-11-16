@@ -9,6 +9,7 @@ export function QuantityStepper({
 	onIncrement,
 	min = 1,
 	size = "md",
+	itemLabel,
 	className,
 }: {
 	value: number;
@@ -16,6 +17,8 @@ export function QuantityStepper({
 	onIncrement: () => void;
 	min?: number;
 	size?: "sm" | "md";
+	/** Product name, so screen readers know which line the buttons change. */
+	itemLabel?: string;
 	className?: string;
 }) {
 	const buttonClass = size === "sm" ? "size-9 rounded-[10px]" : "size-11";
@@ -26,7 +29,7 @@ export function QuantityStepper({
 				size="icon"
 				onClick={onDecrement}
 				disabled={value <= min}
-				aria-label="Diminuir quantidade"
+				aria-label={itemLabel ? `Diminuir quantidade de ${itemLabel}` : "Diminuir quantidade"}
 				className={buttonClass}
 			>
 				<Minus />
@@ -44,7 +47,7 @@ export function QuantityStepper({
 				variant="outline"
 				size="icon"
 				onClick={onIncrement}
-				aria-label="Aumentar quantidade"
+				aria-label={itemLabel ? `Aumentar quantidade de ${itemLabel}` : "Aumentar quantidade"}
 				className={buttonClass}
 			>
 				<Plus />

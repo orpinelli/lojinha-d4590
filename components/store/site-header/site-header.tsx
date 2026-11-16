@@ -140,13 +140,13 @@ export function SiteHeaderActions({ className, ...props }: ComponentProps<"div">
 const iconButton =
 	"relative flex size-10 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-primary/10 hover:text-primary";
 
+/** Link to the /carrinho page, with the item count. */
 export function SiteHeaderCartButton() {
-	const { count, openCart } = useCart();
+	const { count } = useCart();
 	return (
-		<button
-			type="button"
-			onClick={openCart}
-			aria-label={count > 0 ? `Abrir carrinho (${count} itens)` : "Abrir carrinho"}
+		<Link
+			href="/carrinho"
+			aria-label={count > 0 ? `Ver carrinho (${count} ${count === 1 ? "item" : "itens"})` : "Ver carrinho"}
 			className={iconButton}
 		>
 			<ShoppingCart className="size-5" strokeWidth={2.5} />
@@ -155,7 +155,7 @@ export function SiteHeaderCartButton() {
 					{count}
 				</span>
 			)}
-		</button>
+		</Link>
 	);
 }
 

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { X, CheckCircle, AlertTriangle, Info } from "lucide-react"
 
@@ -9,6 +10,8 @@ export interface ToastMessage {
   title: string
   message: string
   duration?: number
+  /** Optional link shown under the message (e.g. "Ver carrinho"). */
+  action?: { label: string; href: string }
 }
 
 type ShowToast = (toast: Omit<ToastMessage, "id">) => void
@@ -45,6 +48,15 @@ function Toast({ message, onRemove }: { message: ToastMessage; onRemove: (id: st
         <div className="ml-3 min-w-0 flex-1 pt-0.5">
           <p className="text-sm font-extrabold text-foreground">{message.title}</p>
           <p className="mt-0.5 text-[13px] font-semibold text-muted-foreground break-words">{message.message}</p>
+          {message.action && (
+            <Link
+              href={message.action.href}
+              onClick={() => onRemove(message.id)}
+              className="mt-1.5 inline-block text-[13px] font-extrabold tracking-[0.5px] text-link uppercase underline-offset-4 hover:underline"
+            >
+              {message.action.label}
+            </Link>
+          )}
         </div>
         <button
           type="button"

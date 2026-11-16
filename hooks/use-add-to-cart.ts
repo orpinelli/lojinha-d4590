@@ -41,6 +41,8 @@ export function useAddToCart() {
 				type: "success",
 				title: "Produto adicionado",
 				message: "Produto adicionado ao carrinho com sucesso!",
+				action: { label: "Ver carrinho", href: "/carrinho" },
+				duration: 4000,
 			});
 			return true;
 		},

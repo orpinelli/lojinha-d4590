@@ -30,21 +30,19 @@ type CartContextValue = {
 	items: CartItem[];
 	count: number;
 	totalInCents: number;
-	isOpen: boolean;
+	/** False until the saved cart is read from this browser (avoids an "empty cart" flash). */
+	ready: boolean;
 	addItem: (item: NewCartItem, quantity?: number) => void;
 	removeItem: (productId: string, size?: string) => void;
 	updateQuantity: (productId: string, quantity: number, size?: string) => void;
 	clear: () => void;
-	setOpen: (open: boolean) => void;
-	openCart: () => void;
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
 	const [items, setItems] = useState<CartItem[]>([]);
-	const [hydrated, setHydrated] = useState(false);
-	const [isOpen, setOpen] = useState(false);
+	const [ready, setReady] = useState(false);
 
 	useEffect(() => {
 		let stored: CartItem[] = [];
@@ -54,7 +52,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 		} catch {
 			// Corrupted or blocked storage: start with an empty cart.
 		}
-		setHydrated(true);
+		setReady(true);
 
 		// A saved cart may hold outdated prices: sync it with the live catalog.
 		if (stored.length === 0) return;
@@ -73,13 +71,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		// Only persist after loading, otherwise the empty initial state would
 		// overwrite the saved cart.
-		if (!hydrated) return;
+		if (!ready) return;
 		try {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 		} catch {
 			// Private mode / quota: the cart still works for this visit.
 		}
-	}, [items, hydrated]);
+	}, [items, ready]);
 
 	const addItem = useCallback((item: NewCartItem, quantity = 1) => {
 		setItems((current) => addCartItem(current, item, quantity));
@@ -94,22 +92,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
 		[],
 	);
 	const clear = useCallback(() => setItems([]), []);
-	const openCart = useCallback(() => setOpen(true), []);
 
 	const value = useMemo<CartContextValue>(
 		() => ({
 			items,
 			count: cartCount(items),
 			totalInCents: cartTotal(items),
-			isOpen,
+			ready,
 			addItem,
 			removeItem,
 			updateQuantity,
 			clear,
-			setOpen,
-			openCart,
 		}),
-		[items, isOpen, addItem, removeItem, updateQuantity, clear, openCart],
+		[items, ready, addItem, removeItem, updateQuantity, clear],
 	);
 
 	return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
