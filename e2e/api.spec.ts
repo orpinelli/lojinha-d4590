@@ -144,3 +144,12 @@ test("nome e celular do carrinho são gravados e o visitante não marca pagament
 	expect((await request.patch(path, { data: { payment: "fiado" } })).status()).toBe(422);
 	expect((await request.patch(path, { data: {} })).status()).toBe(422);
 });
+
+test("a loja nunca recebe o estoque dos produtos", async ({ request }) => {
+	const list = await (await request.get("/api/products")).text();
+	expect(list).not.toMatch(/"stock"|"trackStock"/);
+	const page = await (await request.get("/product/10")).text();
+	expect(page).not.toMatch(/trackStock|\?"stock\?"/);
+	const home = await (await request.get("/")).text();
+	expect(home).not.toMatch(/trackStock/);
+});

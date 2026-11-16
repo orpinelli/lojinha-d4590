@@ -1,5 +1,5 @@
 import "server-only";
-import { productCover } from "@/modules/catalog/domain/product";
+import { isAvailable, productCover } from "@/modules/catalog/domain/product";
 import type { ShowcaseCandidate } from "@/modules/showcase/domain/showcase";
 import type { RequestServices } from "./container";
 
@@ -16,7 +16,8 @@ export async function loadShowcaseEditorData({ catalog }: Pick<RequestServices, 
 				name: product.name,
 				categoryId: product.categoryId,
 				image: productCover(product),
-				active: product.active,
+				// "Hidden in the store" also covers products out of stock
+				active: isAvailable(product),
 			}),
 		),
 		categories: categories.map(({ id, name }) => ({ id, name })),

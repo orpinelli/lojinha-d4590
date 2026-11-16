@@ -15,6 +15,7 @@ import { SectionLabel } from "@/components/ui/section-label";
 import { PageHeader, ShortcutCard, StatCard } from "@/components/admin/blocks";
 import { getDataProviderName, getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
+import { isAvailable } from "@/modules/catalog/domain/product";
 
 export default async function DashboardPage() {
 	const session = await requireAdminSession();
@@ -29,7 +30,8 @@ export default async function DashboardPage() {
 			() => 0,
 		),
 	]);
-	const active = products.filter((product) => product.active).length;
+	// Visible = what the store really shows (active and, when controlled, with stock)
+	const active = products.filter(isAvailable).length;
 	const stats = [
 		{ label: "Produtos visíveis", value: active },
 		{ label: "Produtos ocultos", value: products.length - active },

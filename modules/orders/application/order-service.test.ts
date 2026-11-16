@@ -11,6 +11,8 @@ function product(id: string, name: string, priceInCents: number, active = true):
 		name,
 		priceInCents,
 		active,
+		stock: 0,
+		trackStock: false,
 		categoryId: "c",
 		description: "",
 		images: ["/x.png"],
@@ -55,8 +57,8 @@ function setup() {
 		},
 	};
 	const products = {
-		list: async (filter?: { onlyActive?: boolean }) =>
-			catalog.filter((item) => !filter?.onlyActive || item.active),
+		list: async (filter?: { onlyAvailable?: boolean }) =>
+			catalog.filter((item) => !filter?.onlyAvailable || item.active),
 	} as unknown as ProductRepository;
 	return { stored, service: createOrderService({ orders, products }) };
 }

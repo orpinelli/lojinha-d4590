@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useToast } from "@/components/ui/toast";
 import { useCart } from "@/contexts/cart-context";
-import { productCover, requiresSize, type Product } from "@/modules/catalog/domain/product";
+import { productCover, requiresSize, type StoreProduct } from "@/modules/catalog/domain/product";
 
 export type CartLine = { size?: string; quantity: number };
 
@@ -16,7 +16,7 @@ export function useAddToCart() {
 	const { showToast } = useToast();
 
 	return useCallback(
-		(product: Product, lines: CartLine[]): boolean => {
+		(product: StoreProduct, lines: CartLine[]): boolean => {
 			if (requiresSize(product) && lines.some((line) => !line.size)) {
 				showToast({
 					type: "warning",

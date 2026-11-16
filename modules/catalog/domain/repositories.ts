@@ -5,7 +5,8 @@ import type {
 	ProductInput,
 } from "./catalog-schemas";
 
-export type ProductFilter = { onlyActive?: boolean };
+/** `onlyAvailable`: what the store shows (active and, when stock is controlled, with stock). */
+export type ProductFilter = { onlyAvailable?: boolean };
 
 /** Port: any storage (local files, Supabase...) implements these contracts. */
 export interface ProductRepository {

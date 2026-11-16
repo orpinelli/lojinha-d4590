@@ -8,7 +8,7 @@ import { Price } from "@/components/store/price";
 import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
-import { byPositionThenName, productCover } from "@/modules/catalog/domain/product";
+import { byPositionThenName, productAvailability, productCover } from "@/modules/catalog/domain/product";
 
 const editPath = (id: string) => `/gerenciamento/produtos/${encodeURIComponent(id)}`;
 
@@ -67,7 +67,9 @@ export default async function ProductsPage() {
 								<ResourceList.Meta>
 									<span>{categoryById.get(product.categoryId)?.name ?? "Sem categoria"}</span>
 									<Price cents={product.priceInCents} className="font-extrabold text-foreground" />
-									{!product.active && <Badge variant="outline">Oculto</Badge>}
+									{(product.trackStock || product.stock > 0) && <span>Estoque: {product.stock}</span>}
+									{productAvailability(product) === "inactive" && <Badge variant="outline">Inativo</Badge>}
+									{productAvailability(product) === "out-of-stock" && <Badge variant="warning">Sem estoque</Badge>}
 								</ResourceList.Meta>
 							</ResourceList.Content>
 							<ResourceList.Actions>

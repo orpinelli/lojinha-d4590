@@ -12,6 +12,32 @@ export type {
 
 import type { Product } from "./catalog-schemas";
 
+/**
+ * What the store (visitors) receives: no stock information. Admin-only fields
+ * never reach the browser of a visitor.
+ */
+export type StoreProduct = Omit<Product, "stock" | "trackStock">;
+
+export function toStoreProduct({ stock: _stock, trackStock: _trackStock, ...product }: Product): StoreProduct {
+	return product;
+}
+
+export type Availability = "available" | "inactive" | "out-of-stock";
+
+/**
+ * Whether the store shows the product: it must be active and, when its stock is
+ * controlled, have stock. Restocking brings it back by itself.
+ */
+export function productAvailability(product: Pick<Product, "active" | "stock" | "trackStock">): Availability {
+	if (!product.active) return "inactive";
+	if (product.trackStock && product.stock <= 0) return "out-of-stock";
+	return "available";
+}
+
+export function isAvailable(product: Pick<Product, "active" | "stock" | "trackStock">): boolean {
+	return productAvailability(product) === "available";
+}
+
 export const DEFAULT_SIZES = ["PP", "P", "M", "G", "GG", "XG"] as const;
 
 export function productCover(product: Pick<Product, "images">): string {

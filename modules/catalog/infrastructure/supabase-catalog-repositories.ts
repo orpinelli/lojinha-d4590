@@ -28,6 +28,8 @@ type ProductRow = {
 	details_title: string;
 	details_items: string[];
 	active: boolean;
+	stock: number;
+	track_stock: boolean;
 	position: number;
 	created_at: string;
 	updated_at: string;
@@ -35,7 +37,7 @@ type ProductRow = {
 
 const CATEGORY_COLUMNS = "id, name, position, created_at, updated_at";
 const PRODUCT_COLUMNS =
-	"id, category_id, name, description, price_in_cents, images, sizes, details_title, details_items, active, position, created_at, updated_at";
+	"id, category_id, name, description, price_in_cents, images, sizes, details_title, details_items, active, stock, track_stock, position, created_at, updated_at";
 
 const toCategory = (row: CategoryRow): Category => ({
 	id: row.id,
@@ -57,6 +59,8 @@ const toProduct = (row: ProductRow): Product => ({
 	sizes: row.sizes,
 	details: { title: row.details_title, items: row.details_items },
 	active: row.active,
+	stock: row.stock,
+	trackStock: row.track_stock,
 	position: row.position,
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
@@ -72,6 +76,8 @@ const toProductRow = (input: ProductInput) => ({
 	details_title: input.details.title,
 	details_items: input.details.items,
 	active: input.active,
+	stock: input.stock,
+	track_stock: input.trackStock,
 });
 
 type Result<T> = { data: T | null; error: { code?: string; message: string } | null };
@@ -99,7 +105,8 @@ export function createSupabaseCatalogRepositories(
 					.select(PRODUCT_COLUMNS)
 					.order("position", { ascending: true })
 					.order("name", { ascending: true });
-				if (filter?.onlyActive) query = query.eq("active", true);
+				// Same rule as isAvailable(): active and, when stock is controlled, with stock
+				if (filter?.onlyAvailable) query = query.eq("active", true).or("track_stock.eq.false,stock.gt.0");
 				const rows = unwrap<ProductRow[]>(await query);
 				return (rows ?? []).map(toProduct);
 			},

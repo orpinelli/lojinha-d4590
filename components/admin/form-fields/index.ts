@@ -1,6 +1,7 @@
 import {
 	ChoiceField,
 	ColorField,
+	CounterField,
 	MoneyField,
 	NumberField,
 	PhoneField,
@@ -25,6 +26,7 @@ export const Field = {
 	Text: TextField,
 	Textarea: TextareaField,
 	Number: NumberField,
+	Counter: CounterField,
 	Money: MoneyField,
 	Phone: PhoneField,
 	Select: SelectField,

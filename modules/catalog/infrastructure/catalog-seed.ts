@@ -5,7 +5,7 @@ export type CatalogData = { categories: Category[]; products: Product[] };
 const SEEDED_AT = "2026-01-01T00:00:00.000Z";
 const SIZES = [...DEFAULT_SIZES];
 
-type SeedProduct = Omit<Product, "createdAt" | "updatedAt">;
+type SeedProduct = Omit<Product, "createdAt" | "updatedAt" | "stock" | "trackStock">;
 
 const category = (id: string, name: string, position: number): Category => ({
 	id,
@@ -17,6 +17,8 @@ const category = (id: string, name: string, position: number): Category => ({
 
 const product = (data: SeedProduct): Product => ({
 	...data,
+	stock: 0,
+	trackStock: false,
 	createdAt: SEEDED_AT,
 	updatedAt: SEEDED_AT,
 });
@@ -212,6 +214,8 @@ export function normalizeCatalog(raw: unknown): CatalogData {
 			sizes: (item.sizes as string[]) ?? [],
 			details: (item.details as Product["details"]) ?? { title: "", items: [] },
 			active: item.active !== false,
+			stock: Number.isInteger(item.stock) && Number(item.stock) > 0 ? Number(item.stock) : 0,
+			trackStock: item.trackStock === true,
 			position: typeof item.position === "number" ? item.position : index,
 			createdAt: String(item.createdAt ?? SEEDED_AT),
 			updatedAt: String(item.updatedAt ?? SEEDED_AT),

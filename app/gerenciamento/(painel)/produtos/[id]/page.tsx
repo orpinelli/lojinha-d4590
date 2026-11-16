@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/admin/blocks";
 import { ProductForm } from "@/components/admin/product-form";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
-import { productPath } from "@/modules/catalog/domain/product";
+import { isAvailable, productPath } from "@/modules/catalog/domain/product";
 import { NotFoundError } from "@/modules/shared/domain/errors";
 
 type Props = { params: Promise<{ id: string }> };
@@ -33,7 +33,7 @@ export default async function EditProductPage({ params }: Props) {
 					<PageHeader.Description>Editar produto</PageHeader.Description>
 				</PageHeader.Content>
 				<PageHeader.Actions>
-					{product.active && (
+					{isAvailable(product) && (
 						<Button asChild variant="outline">
 							<a href={productPath(product)} target="_blank" rel="noopener noreferrer">
 								<ExternalLink /> Ver na loja

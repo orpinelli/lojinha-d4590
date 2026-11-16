@@ -4,7 +4,7 @@ import { OrderForm } from "@/components/admin/order-form";
 import { orderPath } from "@/components/admin/orders";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
-import { byPositionThenName } from "@/modules/catalog/domain/product";
+import { byPositionThenName, isAvailable } from "@/modules/catalog/domain/product";
 import { formatDateTime } from "@/modules/shared/domain/dates";
 import { NotFoundError } from "@/modules/shared/domain/errors";
 
@@ -36,7 +36,12 @@ export default async function EditOrderPage({ params }: Props) {
 				order={order}
 				products={[...products]
 					.sort(byPositionThenName)
-					.map(({ id: productId, name, priceInCents, active }) => ({ id: productId, name, priceInCents, active }))}
+					.map((product) => ({
+						id: product.id,
+						name: product.name,
+						priceInCents: product.priceInCents,
+						active: isAvailable(product),
+					}))}
 				cancelHref={orderPath(order.id)}
 			/>
 		</>

@@ -23,11 +23,11 @@ import {
 	productCover,
 	productPath,
 	requiresSize,
-	type Product,
+	type StoreProduct,
 } from "@/modules/catalog/domain/product";
 
 type ProductCardContextValue = {
-	product: Product;
+	product: StoreProduct;
 	size: string;
 	setSize: (size: string) => void;
 	/** Incremented on every attempt to add without a size (drives the highlight). */
@@ -49,7 +49,7 @@ export function ProductCardRoot({
 	className,
 	children,
 	...props
-}: ComponentProps<typeof Card> & { product: Product }) {
+}: ComponentProps<typeof Card> & { product: StoreProduct }) {
 	const [size, setSize] = useState("");
 	const [sizeAttention, setSizeAttention] = useState(0);
 	const add = useAddToCart();

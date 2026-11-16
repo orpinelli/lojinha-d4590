@@ -3,6 +3,8 @@
 import type { ComponentProps } from "react";
 import { useFormContext } from "react-hook-form";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Minus, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import {
@@ -107,6 +109,69 @@ export function MoneyField({ name, label, description, className }: BaseFieldPro
 					/>
 				</FieldFrame>
 			)}
+		/>
+	);
+}
+
+/** Whole number with − and + buttons (e.g. stock); typing also works. */
+export function CounterField({
+	name,
+	label,
+	description,
+	className,
+	min = 0,
+	max = 1_000_000,
+}: BaseFieldProps & { min?: number; max?: number }) {
+	const { control } = useFormContext();
+	return (
+		<FormField
+			control={control}
+			name={name}
+			render={({ field }) => {
+				const value = Number.isFinite(field.value) ? Number(field.value) : 0;
+				const set = (next: number) => field.onChange(Math.min(max, Math.max(min, next)));
+				return (
+					<FieldFrame label={label} description={description} className={className} asControl={false}>
+						<div className="flex items-center gap-2 pb-1">
+							<Button
+								variant="outline"
+								size="icon"
+								onClick={() => set(value - 1)}
+								disabled={value <= min}
+								aria-label={`Diminuir ${label.toLowerCase()}`}
+							>
+								<Minus />
+							</Button>
+							<FormControl>
+								<Input
+									type="number"
+									inputMode="numeric"
+									min={min}
+									max={max}
+									step={1}
+									name={field.name}
+									ref={field.ref}
+									onBlur={field.onBlur}
+									value={Number.isFinite(field.value) ? field.value : ""}
+									onChange={(event) =>
+										field.onChange(event.target.value === "" ? Number.NaN : event.target.valueAsNumber)
+									}
+									className="w-28 text-center font-display text-lg tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+								/>
+							</FormControl>
+							<Button
+								variant="outline"
+								size="icon"
+								onClick={() => set(value + 1)}
+								disabled={value >= max}
+								aria-label={`Aumentar ${label.toLowerCase()}`}
+							>
+								<Plus />
+							</Button>
+						</div>
+					</FieldFrame>
+				);
+			}}
 		/>
 	);
 }

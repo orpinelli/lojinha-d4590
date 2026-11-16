@@ -7,11 +7,11 @@ import { SizeSelect } from "@/components/store/size-select";
 import { Button } from "@/components/ui/button";
 import { useAddToCart } from "@/hooks/use-add-to-cart";
 import { cn } from "@/lib/utils";
-import { requiresSize, type Product } from "@/modules/catalog/domain/product";
+import { requiresSize, type StoreProduct } from "@/modules/catalog/domain/product";
 import { formatPrice } from "@/modules/shared/domain/money";
 
 type PurchaseContextValue = {
-	product: Product;
+	product: StoreProduct;
 	quantity: number;
 	sizes: string[];
 	/** Incremented on every attempt to add with missing sizes. */
@@ -36,7 +36,7 @@ export function ProductPurchaseRoot({
 	className,
 	children,
 }: {
-	product: Product;
+	product: StoreProduct;
 	className?: string;
 	children: ReactNode;
 }) {

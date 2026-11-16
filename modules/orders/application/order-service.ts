@@ -44,7 +44,7 @@ export function createOrderService({ orders, products }: Dependencies) {
 		async place(rawInput: unknown): Promise<{ code: string }> {
 			const input = parseInput(checkoutInputSchema, rawInput);
 			const catalog = new Map(
-				(await products.list({ onlyActive: true })).map((product) => [product.id, product]),
+				(await products.list({ onlyAvailable: true })).map((product) => [product.id, product]),
 			);
 			const items = input.items.map((line, index): OrderItem => {
 				const product = catalog.get(line.productId);

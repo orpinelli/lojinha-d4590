@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GalleryHorizontalEnd } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
@@ -16,11 +17,46 @@ import { adminApi } from "@/lib/api-client";
 import { applyServerErrors } from "@/lib/form-errors";
 import {
 	MAX_PRODUCT_IMAGES,
+	MAX_STOCK,
 	productInputSchema,
 } from "@/modules/catalog/domain/catalog-schemas";
-import type { Product, ProductInput } from "@/modules/catalog/domain/product";
+import {
+	productAvailability,
+	type Availability,
+	type Product,
+	type ProductInput,
+} from "@/modules/catalog/domain/product";
 
 const PRODUCTS_PATH = "/gerenciamento/produtos";
+
+const AVAILABILITY: Record<Availability, { badge: "success" | "secondary" | "warning"; label: string; text: string }> = {
+	available: { badge: "success", label: "Na loja", text: "Os clientes conseguem ver e comprar este produto." },
+	inactive: { badge: "secondary", label: "Inativo", text: "O produto está desligado e não aparece na loja." },
+	"out-of-stock": {
+		badge: "warning",
+		label: "Sem estoque",
+		text: "Estoque zerado com o controle ligado: não aparece na loja até você repor.",
+	},
+};
+
+/** Live summary of the switches and the stock below it. */
+function AvailabilityStatus() {
+	const [active, stock, trackStock] = useWatch({ name: ["active", "stock", "trackStock"] });
+	const availability = productAvailability({
+		active: Boolean(active),
+		stock: Number.isFinite(stock) ? Number(stock) : 0,
+		trackStock: Boolean(trackStock),
+	});
+	const { badge, label, text } = AVAILABILITY[availability];
+	return (
+		<div aria-live="polite" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-muted p-3">
+			<Badge variant={badge} shape="pill">
+				{label}
+			</Badge>
+			<span className="text-sm font-semibold text-muted-foreground">{text}</span>
+		</div>
+	);
+}
 
 function toFormValues(product: Product | undefined, defaultCategoryId: string): ProductInput {
 	if (!product) {
@@ -33,6 +69,8 @@ function toFormValues(product: Product | undefined, defaultCategoryId: string): 
 			sizes: [],
 			details: { title: "Descrição do Produto", items: [] },
 			active: true,
+			stock: 0,
+			trackStock: false,
 		};
 	}
 	const {
@@ -149,12 +187,27 @@ export function ProductForm({
 				</FormSection.Root>
 
 				<FormSection.Root>
-					<FormSection.Header title="Visibilidade" />
+					<FormSection.Header
+						title="Disponibilidade"
+						description="Se o produto aparece na loja e quanto tem em estoque. Os clientes nunca veem a quantidade."
+					/>
 					<FormSection.Content>
+						<AvailabilityStatus />
 						<Field.Switch
 							name="active"
-							label="Visível na loja"
-							description="Desligue para esconder o produto sem excluir."
+							label="Produto ativo"
+							description="Desligado, o produto fica inativo: sai da loja, mas continua cadastrado."
+						/>
+						<Field.Counter
+							name="stock"
+							label="Estoque"
+							description="Quantidade disponível. É só um controle interno."
+							max={MAX_STOCK}
+						/>
+						<Field.Switch
+							name="trackStock"
+							label="Controlar estoque"
+							description="Com o estoque zerado, o produto sai da loja sozinho e volta quando você repuser."
 						/>
 						<p className="flex gap-2 rounded-xl bg-muted p-3 text-sm font-semibold text-muted-foreground">
 							<GalleryHorizontalEnd className="mt-0.5 size-4 shrink-0" aria-hidden />

@@ -1,8 +1,8 @@
-import type { Product } from "@/modules/catalog/domain/product";
+import type { StoreProduct } from "@/modules/catalog/domain/product";
 import { ProductCard } from "./parts";
 
 /** Grid/carousel card: same parts, compact layout. */
-export function CatalogProductCard({ product }: { product: Product }) {
+export function CatalogProductCard({ product }: { product: StoreProduct }) {
 	return (
 		<ProductCard.Root product={product} className="h-full">
 			<ProductCard.Media />
@@ -25,7 +25,7 @@ export function FeaturedProductCard({
 	badge,
 	priority,
 }: {
-	product: Product;
+	product: StoreProduct;
 	badge?: string;
 	priority?: boolean;
 }) {

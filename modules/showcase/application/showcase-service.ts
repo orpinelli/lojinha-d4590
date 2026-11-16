@@ -1,4 +1,4 @@
-import type { Product } from "@/modules/catalog/domain/product";
+import { toStoreProduct, type StoreProduct } from "@/modules/catalog/domain/product";
 import type { CatalogRepositories } from "@/modules/catalog/domain/repositories";
 import { NotFoundError, ValidationError } from "@/modules/shared/domain/errors";
 import { assertSameItems, nextPosition, reorderSchema } from "@/modules/shared/domain/ordering";
@@ -11,7 +11,8 @@ import {
 } from "../domain/showcase";
 import { showcaseInputSchema } from "../domain/showcase-schemas";
 
-export type HomeShowcase = { showcase: Showcase; products: Product[] };
+/** Store-facing: products without stock information. */
+export type HomeShowcase = { showcase: Showcase; products: StoreProduct[] };
 export type ShowcaseSummary = Showcase & { productCount: number };
 
 type Dependencies = CatalogRepositories & { showcases: ShowcaseRepository };
@@ -47,13 +48,13 @@ export function createShowcaseService({ showcases, products, categories }: Depen
 		async getHome(): Promise<HomeShowcase[]> {
 			const [list, activeProducts] = await Promise.all([
 				showcases.list(),
-				products.list({ onlyActive: true }),
+				products.list({ onlyAvailable: true }),
 			]);
 			return list
 				.filter((showcase) => showcase.active)
 				.map((showcase) => ({
 					showcase,
-					products: resolveShowcaseProducts(showcase, activeProducts),
+					products: resolveShowcaseProducts(showcase, activeProducts).map(toStoreProduct),
 				}))
 				.filter(({ products: items }) => items.length > 0);
 		},
@@ -61,7 +62,7 @@ export function createShowcaseService({ showcases, products, categories }: Depen
 		async listWithCounts(): Promise<ShowcaseSummary[]> {
 			const [list, activeProducts] = await Promise.all([
 				showcases.list(),
-				products.list({ onlyActive: true }),
+				products.list({ onlyAvailable: true }),
 			]);
 			return list.map((showcase) => ({
 				...showcase,

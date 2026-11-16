@@ -11,10 +11,12 @@ import {
 	type Category,
 	type Product,
 } from "../domain/catalog-schemas";
+import { isAvailable, toStoreProduct, type StoreProduct } from "../domain/product";
 import type { CatalogRepositories } from "../domain/repositories";
 
 export type CategoryWithCount = Category & { productCount: number };
-export type PublicProduct = { product: Product; category: Category | null };
+/** For the store: no stock information (visitors never see it). */
+export type PublicProduct = { product: StoreProduct; category: Category | null };
 
 /** Catalog use cases. Every write validates untrusted input here. */
 export function createCatalogService({ products, categories }: CatalogRepositories) {
@@ -29,9 +31,9 @@ export function createCatalogService({ products, categories }: CatalogRepositori
 	return {
 		async getPublicProduct(id: string): Promise<PublicProduct | null> {
 			const product = await products.findById(id);
-			if (!product || !product.active) return null;
+			if (!product || !isAvailable(product)) return null;
 			return {
-				product,
+				product: toStoreProduct(product),
 				category: await categories.findById(product.categoryId),
 			};
 		},
@@ -40,8 +42,9 @@ export function createCatalogService({ products, categories }: CatalogRepositori
 			return products.list();
 		},
 
-		listActiveProducts(): Promise<Product[]> {
-			return products.list({ onlyActive: true });
+		/** What the store shows, without stock information. */
+		async listActiveProducts(): Promise<StoreProduct[]> {
+			return (await products.list({ onlyAvailable: true })).map(toStoreProduct);
 		},
 
 		async getProduct(id: string): Promise<Product> {

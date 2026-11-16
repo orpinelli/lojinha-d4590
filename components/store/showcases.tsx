@@ -1,4 +1,4 @@
-import type { Product } from "@/modules/catalog/domain/product";
+import type { StoreProduct } from "@/modules/catalog/domain/product";
 import type { ShowcaseLayout } from "@/modules/showcase/domain/showcase";
 import { Carousel } from "./carousel";
 import { FeaturedProductCard } from "./product-card";
@@ -14,7 +14,7 @@ export function FeaturedShowcase({
 	priority,
 }: {
 	title: string;
-	products: Product[];
+	products: StoreProduct[];
 	priority?: boolean;
 }) {
 	return (
@@ -53,7 +53,7 @@ export function ShowcaseBlock({
 	anchor: string;
 	title: string;
 	layout: Exclude<ShowcaseLayout, "featured">;
-	products: Product[];
+	products: StoreProduct[];
 }) {
 	return (
 		<ShowcaseSection.Root id={anchor}>

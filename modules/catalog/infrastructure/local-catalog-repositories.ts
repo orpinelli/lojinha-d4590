@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { createJsonFileStore } from "@/modules/shared/infrastructure/json-file-store";
-import { byPositionThenName, type Category, type Product } from "../domain/product";
+import { isAvailable, byPositionThenName, type Category, type Product } from "../domain/product";
 import type { CatalogRepositories } from "../domain/repositories";
 import { catalogSeed, normalizeCatalog, type CatalogData } from "./catalog-seed";
 
@@ -66,7 +66,7 @@ export function createLocalCatalogRepositories(filePath: string): CatalogReposit
 			async list(filter) {
 				const { products } = await store.read();
 				return products
-					.filter((product) => !filter?.onlyActive || product.active)
+					.filter((product) => !filter?.onlyAvailable || isAvailable(product))
 					.sort(byPositionThenName);
 			},
 			findById: async (id) => (await find("products", id)) ?? null,

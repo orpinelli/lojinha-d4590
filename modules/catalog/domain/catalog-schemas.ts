@@ -3,6 +3,7 @@ import { assetUrlSchema } from "@/modules/shared/domain/validation";
 
 export const MAX_PRODUCT_IMAGES = 12;
 export const MAX_PRICE_IN_CENTS = 10_000_000;
+export const MAX_STOCK = 1_000_000;
 
 /** Order is not part of the input: it is defined by drag and drop (reorder). */
 export const categoryInputSchema = z.object({
@@ -48,7 +49,16 @@ export const productInputSchema = z.object({
 		.max(20, "Use no máximo 20 tamanhos.")
 		.refine((sizes) => new Set(sizes).size === sizes.length, "Há tamanhos repetidos."),
 	details: productDetailsSchema,
+	/** Off: the product is inactive and leaves the store (it stays registered). */
 	active: z.boolean(),
+	/** Internal control: visitors never see it. */
+	stock: z
+		.number({ error: "Informe a quantidade." })
+		.int("Use um número inteiro.")
+		.min(0, "O estoque não pode ser negativo.")
+		.max(MAX_STOCK, "Quantidade alta demais."),
+	/** On: with stock at zero the product leaves the store (and comes back when restocked). */
+	trackStock: z.boolean(),
 });
 
 export type CategoryInput = z.infer<typeof categoryInputSchema>;

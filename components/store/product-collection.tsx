@@ -1,4 +1,4 @@
-import type { Product } from "@/modules/catalog/domain/product";
+import type { StoreProduct } from "@/modules/catalog/domain/product";
 import { Carousel } from "./carousel";
 import { CatalogProductCard } from "./product-card";
 
@@ -13,7 +13,7 @@ export function ProductCollection({
 	products,
 	layout,
 }: {
-	products: Product[];
+	products: StoreProduct[];
 	layout: "carousel" | "grid";
 }) {
 	const cards = products.map((product) => (

@@ -163,3 +163,86 @@ test("vendas do ano: quantidade e valor de cada produto, sem os cancelados", asy
 	await yearLinks.last().click();
 	await expect(page.getByText(/^Nenhuma venda em \d{4}-\d{2}$/)).toBeVisible();
 });
+
+test("busca de pedidos por nome, número e celular enquanto digita", async ({ page }) => {
+	await loginAsAdmin(page.request);
+	const place = async (customerName: string, customerPhone: string) => {
+		const code = randomOrderCode();
+		const response = await page.request.post("/api/orders", {
+			data: { code, customerName, customerPhone, items: [{ productId: "4", quantity: 1 }] },
+			headers: { "x-real-ip": "10.80.0.1" },
+		});
+		expect(response.status()).toBe(201);
+		return code;
+	};
+	const ana = await place("Ana Busca Teste", "11 98765-4321");
+	const bruno = await place("Bruno Busca Teste", "");
+
+	await page.goto("/gerenciamento/pedidos");
+	const search = page.getByRole("textbox", { name: "Buscar pedidos" });
+	const rows = page.getByRole("list", { name: "Pedidos" }).getByRole("listitem");
+
+	await search.fill("ana busca");
+	await expect(rows).toHaveCount(1);
+	await expect(rows.first()).toContainText(`Pedido #${ana}`);
+	await expect(page.getByText(/^1 de \d+ pedidos$/)).toBeVisible();
+
+	await search.fill(`#${bruno.slice(0, 4).toLowerCase()}`);
+	await expect(rows.first()).toContainText("Bruno Busca Teste");
+
+	await search.fill("(11) 98765-4321");
+	await expect(rows).toHaveCount(1);
+	await expect(rows.first()).toContainText(`Pedido #${ana}`);
+
+	await search.fill("ninguém com esse nome");
+	await expect(page.getByText(/^Nenhum pedido encontrado para/)).toBeVisible();
+
+	// The search goes to the URL: it survives a reload and the status tabs
+	await search.fill("bruno busca");
+	await expect(page).toHaveURL(/busca=bruno/);
+	await page.reload();
+	await expect(search).toHaveValue("bruno busca");
+	await expect(rows).toHaveCount(1);
+	await page.getByRole("navigation", { name: "Filtrar pedidos por status" }).getByRole("link", { name: /^Novos/ }).click();
+	await expect(page).toHaveURL(/status=new.*busca=bruno/);
+	await expect(rows).toHaveCount(1);
+
+	// Esc clears
+	await search.press("Escape");
+	await expect(search).toHaveValue("");
+	expect(await rows.count()).toBeGreaterThan(1);
+});
+
+test("estoque: com o controle ligado e estoque zero o produto sai da loja; repor traz de volta", async ({ page }) => {
+	await loginAsAdmin(page.request);
+	const form = "/gerenciamento/produtos/8"; // "Caneca + tirante" (seed)
+
+	await page.goto(form);
+	await expect(page.getByText("Na loja", { exact: true })).toBeVisible();
+	const stock = page.getByLabel("Estoque", { exact: true });
+	await page.getByRole("button", { name: "Aumentar estoque" }).click();
+	await page.getByRole("button", { name: "Aumentar estoque" }).click();
+	await expect(stock).toHaveValue("2");
+	await page.getByRole("switch", { name: "Controlar estoque" }).click();
+	await expect(page.getByText("Na loja", { exact: true })).toBeVisible();
+	await stock.fill("0");
+	await expect(page.getByText("Sem estoque", { exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Salvar alterações" }).click();
+	await expect(page).toHaveURL(/\/gerenciamento\/produtos$/);
+	const row = page.getByRole("listitem").filter({ has: page.getByText("Caneca + tirante", { exact: true }) });
+	await expect(row).toContainText("Sem estoque");
+
+	// The store no longer shows it (page, list and checkout)
+	expect((await page.request.get("/product/8")).status()).toBe(404);
+	const listed = (await (await page.request.get("/api/products")).json()) as { data: { id: string }[] };
+	expect(listed.data.some((item) => item.id === "8")).toBe(false);
+
+	// Restock: it comes back by itself
+	await page.goto(form);
+	await page.getByRole("button", { name: "Aumentar estoque" }).click();
+	await expect(page.getByText("Na loja", { exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Salvar alterações" }).click();
+	await expect(page).toHaveURL(/\/gerenciamento\/produtos$/);
+	expect((await page.request.get("/product/8")).status()).toBe(200);
+	await expect(row).toContainText("Estoque: 1");
+});
