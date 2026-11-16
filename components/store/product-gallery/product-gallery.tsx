@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
 	createContext,
 	useContext,
@@ -11,6 +10,7 @@ import {
 } from "react";
 import { ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { Carousel } from "../carousel";
 
 type GalleryContextValue = {
@@ -68,6 +68,7 @@ const HOVER_ZOOM = 2.2;
 /**
  * Main photo. With a mouse, it zooms in under the cursor and follows it; a
  * click (or a tap on phones) opens the full-screen viewer with pinch zoom.
+ * On desktop its height follows the screen, so the thumbnails stay in view.
  */
 export function ProductGalleryMain() {
 	const { images, alt, selected, openViewer } = useGallery();
@@ -85,41 +86,36 @@ export function ProductGalleryMain() {
 	};
 
 	return (
-		<button
-			type="button"
-			onClick={() => openViewer(selected)}
-			onPointerMove={follow}
-			onPointerLeave={() => setHoverZoom(false)}
-			aria-label={`Ampliar foto ${selected + 1} de ${images.length}`}
-			className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-2xl border-2 bg-muted focus-visible:ring-[3px] focus-visible:ring-link/40 focus-visible:outline-none"
-		>
-			<div
-				ref={frameRef}
-				data-zoomed={hoverZoom || undefined}
-				className="absolute inset-0 transition-[scale] duration-200 ease-out motion-reduce:transition-none"
-				style={{ scale: hoverZoom ? HOVER_ZOOM : 1 }}
+		<div className="space-y-2">
+			<button
+				type="button"
+				onClick={() => openViewer(selected)}
+				onPointerMove={follow}
+				onPointerLeave={() => setHoverZoom(false)}
+				aria-label={`Ampliar foto ${selected + 1} de ${images.length}`}
+				className="group relative block aspect-[4/5] w-full cursor-zoom-in overflow-hidden rounded-2xl border-2 bg-white lg:max-h-[max(28rem,calc(100dvh-21rem))] focus-visible:ring-[3px] focus-visible:ring-link/40 focus-visible:outline-none"
 			>
-				<Image
-					src={images[selected] ?? images[0]}
-					alt={alt}
-					fill
-					priority
-					sizes="(max-width: 1024px) 100vw, 50vw"
-					className="object-cover"
-				/>
-			</div>
-			<span
-				aria-hidden
-				className={cn(
-					"absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-2 text-xs font-extrabold tracking-[0.5px] text-foreground uppercase shadow-sm transition-opacity",
-					hoverZoom && "opacity-0",
-				)}
-			>
-				<ZoomIn className="size-4" strokeWidth={2.5} />
-				<span className="pointer-fine:hidden">Toque para ampliar</span>
-				<span className="hidden pointer-fine:inline">Ampliar</span>
-			</span>
-		</button>
+				<div
+					ref={frameRef}
+					data-zoomed={hoverZoom || undefined}
+					className="absolute inset-0 transition-[scale] duration-200 ease-out motion-reduce:transition-none"
+					style={{ scale: hoverZoom ? HOVER_ZOOM : 1 }}
+				>
+					<ProductPhoto
+						src={images[selected] ?? images[0]}
+						alt={alt}
+						priority
+						sizes="(max-width: 1024px) 100vw, 50vw"
+					/>
+				</div>
+			</button>
+			{/* Hint below the photo, never on top of it (it would hide details) */}
+			<p aria-hidden className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
+				<ZoomIn className="size-4 shrink-0" strokeWidth={2.5} />
+				<span className="pointer-fine:hidden">Toque na foto para ampliar</span>
+				<span className="hidden pointer-fine:inline">Passe o mouse para ver de perto · clique para ampliar</span>
+			</p>
+		</div>
 	);
 }
 
@@ -133,11 +129,12 @@ function Thumbnail({ image, index }: { image: string; index: number }) {
 			aria-label={`Ver imagem ${index + 1}`}
 			aria-pressed={active}
 			className={cn(
-				"relative aspect-square w-full overflow-hidden rounded-xl border-2 bg-muted transition-colors",
+				"relative aspect-square w-full overflow-hidden rounded-xl border-2 transition-colors",
+				PRODUCT_PHOTO_FRAME,
 				active ? "border-primary" : "hover:border-stroke",
 			)}
 		>
-			<Image src={image} alt="" fill sizes="(max-width: 768px) 25vw, 12vw" className="object-cover" />
+			<ProductPhoto src={image} sizes="(max-width: 768px) 25vw, 12vw" />
 		</button>
 	);
 }

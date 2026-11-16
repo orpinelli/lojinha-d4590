@@ -13,6 +13,7 @@ import {
 } from "react";
 import { Card } from "@/components/ui/card";
 import { Price } from "@/components/store/price";
+import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { SizeSelect } from "@/components/store/size-select";
 import { FeaturedBadge, ShippingBadge } from "@/components/store/store-badges";
 import { Button } from "@/components/ui/button";
@@ -96,14 +97,13 @@ export function ProductCardMedia({
 }) {
 	const { product } = useProductCard();
 	const media = (
-		<div className={cn("relative aspect-square w-full overflow-hidden bg-muted", className)}>
-			<Image
+		<div className={cn("relative aspect-[4/5] w-full overflow-hidden", PRODUCT_PHOTO_FRAME, className)}>
+			<ProductPhoto
 				src={productCover(product)}
 				alt={product.name}
-				fill
 				sizes={sizes}
 				priority={priority}
-				className={cn("object-cover", imageClassName)}
+				className={imageClassName}
 			/>
 		</div>
 	);

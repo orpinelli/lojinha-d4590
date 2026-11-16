@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { Package, Phone, UserRound } from "lucide-react";
 import { Price } from "@/components/store/price";
+import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -62,12 +62,13 @@ export function OrderThumb({ src, className }: { src?: string; className?: strin
 	return (
 		<span
 			className={cn(
-				"relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted text-label",
+				"relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl text-label",
+				src ? PRODUCT_PHOTO_FRAME : "bg-muted",
 				className,
 			)}
 		>
 			{src ? (
-				<Image src={src} alt="" fill sizes="64px" className="object-cover" />
+				<ProductPhoto src={src} sizes="64px" />
 			) : (
 				<Package className="size-6" aria-hidden />
 			)}

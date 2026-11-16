@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
 	createContext,
@@ -15,6 +14,7 @@ import {
 } from "react";
 import { CircleCheck, MessageCircle, ShoppingCart, Trash2 } from "lucide-react";
 import { Price } from "@/components/store/price";
+import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { QuantityStepper } from "@/components/store/quantity-stepper";
 import { ShippingBadge } from "@/components/store/store-badges";
 import { Button } from "@/components/ui/button";
@@ -209,11 +209,11 @@ function CartLine({ item }: { item: CartItem }) {
 		<li className="flex gap-3 rounded-2xl border-2 p-3 sm:gap-4 sm:p-4">
 			<Link
 				href={href}
-				className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-24"
+				className={cn("relative size-20 shrink-0 overflow-hidden rounded-xl sm:size-24", PRODUCT_PHOTO_FRAME)}
 				tabIndex={-1}
 				aria-hidden
 			>
-				{item.image && <Image src={item.image} alt="" fill sizes="96px" className="object-cover" />}
+				{item.image && <ProductPhoto src={item.image} sizes="96px" />}
 			</Link>
 			<div className="flex min-w-0 flex-1 flex-col gap-1">
 				<div className="flex items-start justify-between gap-2">

@@ -10,6 +10,7 @@ import { FormControl, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Sortable, SortableHandle, SortableItem } from "@/components/ui/sortable";
 import { useImageUpload } from "@/hooks/use-image-upload";
+import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { cn } from "@/lib/utils";
 import { DEFAULT_SIZES } from "@/modules/catalog/domain/product";
 import { ACCEPTED_IMAGE_TYPES } from "@/modules/media/domain/media";
@@ -201,10 +202,10 @@ export function ImageListField({
 									<SortableItem
 										key={ids[index]}
 										id={ids[index]}
-										className="overflow-hidden rounded-2xl border-2 bg-muted"
+										className={cn("overflow-hidden rounded-2xl border-2", PRODUCT_PHOTO_FRAME)}
 									>
 										<div className="relative aspect-square">
-											<Image src={url} alt={`Imagem ${index + 1}`} fill sizes="200px" className="object-cover" />
+											<ProductPhoto src={url} alt={`Imagem ${index + 1}`} sizes="200px" />
 										</div>
 										{index === 0 && (
 											<Badge variant="solid" className="absolute top-2 left-2">

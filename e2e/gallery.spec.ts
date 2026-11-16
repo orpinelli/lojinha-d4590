@@ -48,3 +48,14 @@ test("fotos do produto: zoom natural no mouse e em tela cheia", async ({ page, i
 	// The page keeps showing the last photo seen
 	await expect(page.getByRole("button", { name: /^Ampliar foto 3 de \d+$/ })).toBeVisible();
 });
+
+test("fotos de produto aparecem inteiras, sem corte", async ({ page }) => {
+	for (const path of ["/", "/product/10"]) {
+		await page.goto(path);
+		const fits = await page
+			.locator("main img[data-nimg]")
+			.evaluateAll((images) => images.map((image) => getComputedStyle(image).objectFit));
+		expect(fits.length, `fotos em ${path}`).toBeGreaterThan(0);
+		expect(fits.every((fit) => fit === "contain"), `fotos em ${path}: ${fits.join(", ")}`).toBe(true);
+	}
+});

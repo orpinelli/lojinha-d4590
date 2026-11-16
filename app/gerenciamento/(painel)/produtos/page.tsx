@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Package, Pencil, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/actions";
 import { EmptyState, PageHeader, ResourceList } from "@/components/admin/blocks";
 import { Price } from "@/components/store/price";
+import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
 import { byPositionThenName, productCover } from "@/modules/catalog/domain/product";
@@ -55,8 +55,8 @@ export default async function ProductsPage() {
 				<ResourceList.Root>
 					{sorted.map((product) => (
 						<ResourceList.Item key={product.id}>
-							<ResourceList.Media>
-								<Image src={productCover(product)} alt="" fill sizes="64px" className="object-cover" />
+							<ResourceList.Media className={PRODUCT_PHOTO_FRAME}>
+								<ProductPhoto src={productCover(product)} sizes="64px" />
 							</ResourceList.Media>
 							<ResourceList.Content>
 								<ResourceList.Title>

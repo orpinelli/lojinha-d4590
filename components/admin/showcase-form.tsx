@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -28,6 +27,7 @@ import { FormActions, FormSection, ResourceList } from "@/components/admin/block
 import { Field } from "@/components/admin/form-fields";
 import type { ChoiceOption } from "@/components/admin/form-fields/basic-fields";
 import { FieldFrame } from "@/components/admin/form-fields/field-frame";
+import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { useAdminMutation } from "@/hooks/use-admin-mutation";
 import { adminApi } from "@/lib/api-client";
 import { applyServerErrors } from "@/lib/form-errors";
@@ -95,8 +95,8 @@ function toFormValues(showcase?: Showcase): ShowcaseInput {
 
 function Thumb({ src }: { src: string }) {
 	return (
-		<span className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-			{src && <Image src={src} alt="" fill sizes="48px" className="object-cover" />}
+		<span className={cn("relative size-12 shrink-0 overflow-hidden rounded-xl", src ? PRODUCT_PHOTO_FRAME : "bg-muted")}>
+			{src && <ProductPhoto src={src} sizes="48px" />}
 		</span>
 	);
 }
