@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ClipboardList, DatabaseZap, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/actions";
+import { ListSearch } from "@/components/admin/list-search-parts";
 import { EmptyState, FilterTabs, PageHeader, ResourceList } from "@/components/admin/blocks";
 import {
 	ORDERS_PATH,
@@ -25,7 +26,14 @@ import {
 import { formatDateTime } from "@/modules/shared/domain/dates";
 import { StorageUnavailableError } from "@/modules/shared/domain/errors";
 
-type Props = { searchParams: Promise<{ status?: string | string[] }> };
+type Props = { searchParams: Promise<{ status?: string | string[]; busca?: string | string[] }> };
+
+/** What the search looks at: order number, customer name and phone. */
+const searchTerms = (order: { code: string; customerName: string; customerPhone: string }) => [
+	order.code,
+	order.customerName,
+	order.customerPhone,
+];
 
 const isStatus = (value: unknown): value is OrderStatus =>
 	(ORDER_STATUSES as readonly unknown[]).includes(value);
@@ -46,8 +54,17 @@ function Header() {
 
 export default async function OrdersPage({ searchParams }: Props) {
 	await requireAdminSession();
-	const { status } = await searchParams;
+	const { status, busca } = await searchParams;
 	const filter = isStatus(status) ? status : undefined;
+	const search = typeof busca === "string" ? busca : "";
+	/** Status tabs keep what was typed in the search. */
+	const tabHref = (value?: OrderStatus) => {
+		const params = new URLSearchParams();
+		if (value) params.set("status", value);
+		if (search) params.set("busca", search);
+		const query = params.toString();
+		return query ? `${ORDERS_PATH}?${query}` : ORDERS_PATH;
+	};
 	const { orders, catalog } = await getRequestServices();
 
 	let overview: OrdersOverview;
@@ -77,14 +94,24 @@ export default async function OrdersPage({ searchParams }: Props) {
 		<>
 			<Header />
 
+			<ListSearch.Root allTerms={overview.orders.map(searchTerms)} initialQuery={search}>
+			{overview.total > 0 && (
+				<div className="mb-4">
+					<ListSearch.Input
+						label="Buscar pedidos"
+						placeholder="Buscar por nome, celular ou número do pedido"
+					/>
+				</div>
+			)}
+
 			<FilterTabs.Root aria-label="Filtrar pedidos por status">
-				<FilterTabs.Link href={ORDERS_PATH} active={!filter} count={overview.total}>
+				<FilterTabs.Link href={tabHref()} active={!filter} count={overview.total}>
 					Todos
 				</FilterTabs.Link>
 				{ORDER_STATUSES.map((value) => (
 					<FilterTabs.Link
 						key={value}
-						href={`${ORDERS_PATH}?status=${value}`}
+						href={tabHref(value)}
 						active={filter === value}
 						count={overview.counts[value]}
 					>
@@ -108,11 +135,14 @@ export default async function OrdersPage({ searchParams }: Props) {
 					</EmptyState.Description>
 				</EmptyState.Root>
 			) : (
-				<ResourceList.Root aria-label="Pedidos">
+				<>
+				<ListSearch.Status noun="pedido" nounPlural="pedidos" />
+				<ResourceList.Root aria-label="Pedidos" className="empty:hidden">
 					{overview.orders.map((order) => {
 						const units = orderUnits(order.items);
 						return (
-							<ResourceList.Item key={order.id}>
+							<ListSearch.Item key={order.id} terms={searchTerms(order)}>
+							<ResourceList.Item>
 								<OrderThumb src={images.get(order.items[0]?.productId ?? "")} className="sm:size-16" />
 								<ResourceList.Content>
 									<ResourceList.Title>
@@ -140,10 +170,14 @@ export default async function OrdersPage({ searchParams }: Props) {
 									<DeleteButton resource="order" id={order.id} name={`Pedido #${order.code}`} />
 								</ResourceList.Actions>
 							</ResourceList.Item>
+							</ListSearch.Item>
 						);
 					})}
 				</ResourceList.Root>
+				<ListSearch.Empty message="Nenhum pedido encontrado para" />
+				</>
 			)}
+			</ListSearch.Root>
 		</>
 	);
 }
