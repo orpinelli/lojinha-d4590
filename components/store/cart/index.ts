@@ -1,4 +1,5 @@
 import {
+	CartCustomer,
 	CartEmpty,
 	CartHeader,
 	CartLines,
@@ -18,7 +19,9 @@ import {
  *   <Cart.Empty />
  *   <Cart.Review>
  *     <Cart.Lines />
- *     <Cart.Summary />
+ *     <Cart.Summary>
+ *       <Cart.Customer />
+ *     </Cart.Summary>
  *   </Cart.Review>
  *   <Cart.Placed />
  * </Cart.Root>
@@ -31,5 +34,6 @@ export const Cart = {
 	Review: CartReview,
 	Lines: CartLines,
 	Summary: CartSummary,
+	Customer: CartCustomer,
 	Placed: CartPlaced,
 };

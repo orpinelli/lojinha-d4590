@@ -27,6 +27,7 @@ test("telas de pedidos do painel não vazam para os lados", async ({ page }) => 
 	for (const path of [
 		"/gerenciamento",
 		"/gerenciamento/pedidos",
+		"/gerenciamento/vendas",
 		`/gerenciamento/pedidos/${order?.id}`,
 		`/gerenciamento/pedidos/${order?.id}/editar`,
 	]) {

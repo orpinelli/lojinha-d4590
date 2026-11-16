@@ -4,8 +4,14 @@ import { MessageCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/actions";
 import { FormSection, PageHeader } from "@/components/admin/blocks";
-import { OrderStatusControl } from "@/components/admin/order-status-control";
-import { ORDERS_PATH, OrderItemsList, OrderStatusBadge, orderPath } from "@/components/admin/orders";
+import { OrderPaymentControl, OrderStatusControl } from "@/components/admin/order-quick-controls";
+import {
+	ORDERS_PATH,
+	OrderItemsList,
+	OrderPaymentBadge,
+	OrderStatusBadge,
+	orderPath,
+} from "@/components/admin/orders";
 import { Price } from "@/components/store/price";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
@@ -82,6 +88,7 @@ export default async function OrderPage({ params }: Props) {
 					<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
 						<PageHeader.Title>Pedido #{order.code}</PageHeader.Title>
 						<OrderStatusBadge status={order.status} />
+						<OrderPaymentBadge payment={order.payment} />
 					</div>
 					<PageHeader.Description>
 						Feito em {formatDateTime(order.createdAt)}
@@ -119,6 +126,12 @@ export default async function OrderPage({ params }: Props) {
 						<FormSection.Header title="Status" description="Toque para mudar. Salva na hora." />
 						<FormSection.Content>
 							<OrderStatusControl orderId={order.id} status={order.status} />
+						</FormSection.Content>
+					</FormSection.Root>
+					<FormSection.Root>
+						<FormSection.Header title="Pagamento" description="Escolha o meio usado para marcar como pago." />
+						<FormSection.Content>
+							<OrderPaymentControl orderId={order.id} payment={order.payment} />
 						</FormSection.Content>
 					</FormSection.Root>
 					<FormSection.Root>

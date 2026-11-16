@@ -48,9 +48,17 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 	await expect(statusGroup.getByRole("button", { name: "Confirmado" })).toHaveAttribute("aria-pressed", "true");
 	await expect.poll(async () => (await findOrder(page.request, code))?.status).toBe("confirmed");
 
+	// Payment: choosing the method marks it as paid
+	await expect(page.getByText("Não pago", { exact: true }).first()).toBeVisible();
+	const paymentGroup = page.getByRole("group", { name: "Pagamento do pedido" });
+	await paymentGroup.getByRole("button", { name: "Pix" }).click();
+	await expect(paymentGroup.getByRole("button", { name: "Pix" })).toHaveAttribute("aria-pressed", "true");
+	await expect(page.getByText("Pago · Pix").first()).toBeVisible();
+
 	// Edit: customer data and quantity; the total follows
 	await page.getByRole("link", { name: "Editar" }).click();
 	await expect(page.getByRole("heading", { name: `Editar pedido #${code}` })).toBeVisible();
+	await expect(page.getByRole("combobox", { name: "Pagamento" })).toHaveText("Pix");
 	await page.getByLabel("Nome", { exact: true }).fill("Maria Teste");
 	await page.getByLabel("WhatsApp", { exact: true }).fill("19999998888");
 	await page.getByLabel("Observações", { exact: true }).fill("Retira no evento de sábado.");
@@ -91,4 +99,55 @@ test("menu do painel leva aos pedidos", async ({ page }) => {
 	await expect(page).toHaveURL(/\/gerenciamento\/pedidos$/);
 	await expect(page.getByRole("heading", { name: "Pedidos" })).toBeVisible();
 	await expect(page.getByRole("navigation", { name: "Filtrar pedidos por status" })).toContainText("Todos");
+});
+
+test("nome e celular informados no carrinho aparecem no painel", async ({ page }) => {
+	await captureWhatsapp(page);
+	await seedCart(page, [{ productId: "9", name: "Caneca + Tirante + Pin", priceInCents: 4200, quantity: 5 }]);
+	await page.goto("/carrinho");
+	await page.getByLabel("Nome", { exact: true }).fill("Gabriel Teste");
+	await page.getByLabel("Celular (WhatsApp)").fill("19 98888-7777");
+	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
+	const code = (await page.getByText(/^#[0-9A-Z]{6}$/).textContent())?.slice(1) ?? "";
+
+	await loginAsAdmin(page.request);
+	await expect.poll(async () => (await findOrder(page.request, code))?.status).toBe("new");
+	await page.goto("/gerenciamento/pedidos");
+	const row = page.getByRole("listitem").filter({ hasText: `Pedido #${code}` });
+	await expect(row).toContainText("Gabriel Teste");
+	await expect(row).toContainText("+55 19 98888-7777");
+	await expect(row).toContainText("5 itens");
+	await expect(row).toContainText("Não pago");
+});
+
+test("vendas do ano: quantidade e valor de cada produto, sem os cancelados", async ({ page }) => {
+	await loginAsAdmin(page.request);
+	const place = async (quantity: number) => {
+		const code = randomOrderCode();
+		const response = await page.request.post("/api/orders", {
+			data: { code, items: [{ productId: "5", quantity }] },
+			headers: { "x-real-ip": "10.60.0.1" },
+		});
+		expect(response.status()).toBe(201);
+		const order = await findOrder(page.request, code);
+		expect(order).toBeDefined();
+		return order!;
+	};
+	const paid = await place(3);
+	await place(2);
+	const canceled = await place(4);
+	await page.request.patch(`/api/orders/${paid.id}`, { data: { payment: "pix" } });
+	await page.request.patch(`/api/orders/${canceled.id}`, { data: { status: "canceled" } });
+
+	await page.goto("/gerenciamento");
+	await page.getByRole("navigation", { name: "Painel" }).getByRole("link", { name: "Vendas" }).click();
+	await expect(page.getByRole("heading", { name: /^Vendas de \d{4}$/ })).toBeVisible();
+	const tirante = page
+		.getByRole("list", { name: "Produtos vendidos" })
+		.getByRole("listitem")
+		.filter({ has: page.getByText("Tirante", { exact: true }) });
+	await expect(tirante).toContainText(/5\s*unidades/);
+	await expect(tirante).toContainText("R$ 60,00");
+	await expect(page.getByRole("list", { name: "Recebido por meio de pagamento" })).toContainText("Pix");
+	await expect(page.locator("main")).toContainText(/cancelados? fic/);
 });

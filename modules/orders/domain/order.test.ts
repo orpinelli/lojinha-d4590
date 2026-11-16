@@ -1,7 +1,53 @@
 /// <reference types="vitest/globals" />
-import { generateOrderCode, isOrderCode, ORDER_CODE_LENGTH, orderTotal, orderUnits } from "./order";
+import {
+	generateOrderCode,
+	isOrderCode,
+	ORDER_CODE_LENGTH,
+	orderTotal,
+	orderUnits,
+	paymentSummary,
+} from "./order";
 import { buildOrderMessage } from "./order-message";
-import { checkoutInputSchema, orderDetailsSchema } from "./order-schemas";
+import { checkoutInputSchema, orderDetailsSchema, orderPatchSchema } from "./order-schemas";
+
+describe("customer and payment", () => {
+	const items = [{ productId: "1", quantity: 1 }];
+
+	it("cart: name and phone are optional, phone is normalized", () => {
+		expect(checkoutInputSchema.parse({ code: "K7P2QX", items })).toMatchObject({
+			customerName: "",
+			customerPhone: "",
+		});
+		const filled = checkoutInputSchema.parse({
+			code: "K7P2QX",
+			items,
+			customerName: "  Maria ",
+			customerPhone: "(19) 99999-8888",
+		});
+		expect(filled).toMatchObject({ customerName: "Maria", customerPhone: "5519999998888" });
+		expect(checkoutInputSchema.safeParse({ code: "K7P2QX", items, customerPhone: "1234" }).success).toBe(false);
+	});
+
+	it("cart: a payment sent by the visitor is ignored", () => {
+		const parsed = checkoutInputSchema.parse({ code: "K7P2QX", items, payment: "pix" }) as Record<string, unknown>;
+		expect(parsed.payment).toBeUndefined();
+	});
+
+	it("quick change accepts status and/or payment, never nothing", () => {
+		expect(orderPatchSchema.parse({ payment: "pix" })).toEqual({ payment: "pix" });
+		expect(orderPatchSchema.parse({ status: "delivered", payment: "cash" })).toEqual({
+			status: "delivered",
+			payment: "cash",
+		});
+		expect(orderPatchSchema.safeParse({}).success).toBe(false);
+		expect(orderPatchSchema.safeParse({ payment: "fiado" }).success).toBe(false);
+	});
+
+	it("summarizes the payment for the panel", () => {
+		expect(paymentSummary("unpaid")).toBe("Não pago");
+		expect(paymentSummary("credit_card")).toBe("Pago · Cartão de crédito");
+	});
+});
 
 describe("order code", () => {
 	it("has 6 easy-to-read characters", () => {
@@ -72,7 +118,7 @@ describe("order schemas", () => {
 	});
 
 	it("normalizes the customer phone and validates it only when filled", () => {
-		const base = { status: "new", customerName: "", notes: "", items: [
+		const base = { status: "new", payment: "unpaid", customerName: "", notes: "", items: [
 			{ productId: "1", name: "Caneca", size: "", quantity: 1, unitPriceInCents: 2500 },
 		] };
 		expect(orderDetailsSchema.parse({ ...base, customerPhone: "(19) 99999-8888" }).customerPhone).toBe(

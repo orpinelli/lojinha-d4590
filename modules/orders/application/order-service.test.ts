@@ -33,7 +33,7 @@ function setup() {
 		async create(order) {
 			if (stored.some((existing) => existing.code === order.code)) throw new ConflictError("código repetido");
 			const createdAt = new Date(Date.UTC(2026, 10, 16, 12, clock++)).toISOString();
-			stored.push({ ...order, id: `o${stored.length + 1}`, status: "new", customerName: "", customerPhone: "", notes: "", createdAt, updatedAt: createdAt });
+			stored.push({ ...order, id: `o${stored.length + 1}`, status: "new", payment: "unpaid", notes: "", createdAt, updatedAt: createdAt });
 		},
 		async update(id, details, totalInCents) {
 			const order = stored.find((item) => item.id === id);
@@ -41,10 +41,10 @@ function setup() {
 			Object.assign(order, details, { totalInCents });
 			return order;
 		},
-		async updateStatus(id, status) {
+		async patch(id, changes) {
 			const order = stored.find((item) => item.id === id);
 			if (!order) return null;
-			order.status = status;
+			Object.assign(order, changes);
 			return order;
 		},
 		async delete(id) {
@@ -105,7 +105,7 @@ describe("order service", () => {
 		await service.place({ code: "AAAAAA", items: [{ productId: "1", quantity: 1 }] });
 		await service.place({ code: "BBBBBB", items: [{ productId: "1", quantity: 1 }] });
 		const first = await service.overview();
-		await service.updateStatus(first.orders[1].id, { status: "delivered" });
+		await service.patch(first.orders[1].id, { status: "delivered" });
 
 		const overview = await service.overview();
 		expect(overview.orders.map((order) => order.code)).toEqual(["BBBBBB", "AAAAAA"]);
@@ -119,6 +119,7 @@ describe("order service", () => {
 		const [order] = (await service.overview()).orders;
 		const updated = await service.update(order.id, {
 			status: "confirmed",
+			payment: "pix",
 			customerName: "Maria",
 			customerPhone: "(19) 99999-8888",
 			notes: "Retira no evento",
@@ -126,6 +127,7 @@ describe("order service", () => {
 		});
 		expect(updated).toMatchObject({
 			status: "confirmed",
+			payment: "pix",
 			customerName: "Maria",
 			customerPhone: "5519999998888",
 			totalInCents: 6000,

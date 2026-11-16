@@ -18,7 +18,7 @@ import { useAdminMutation } from "@/hooks/use-admin-mutation";
 import { adminApi } from "@/lib/api-client";
 import { applyServerErrors } from "@/lib/form-errors";
 import { formatPrice } from "@/modules/shared/domain/money";
-import { orderTotal, type Order } from "@/modules/orders/domain/order";
+import { ORDER_PAYMENTS, ORDER_PAYMENT_LABELS, orderTotal, type Order } from "@/modules/orders/domain/order";
 import { orderDetailsSchema, type OrderDetailsInput } from "@/modules/orders/domain/order-schemas";
 
 export type OrderProductOption = { id: string; name: string; priceInCents: number; active: boolean };
@@ -155,6 +155,7 @@ export function OrderForm({
 		resolver: zodResolver(orderDetailsSchema),
 		defaultValues: {
 			status: order.status,
+			payment: order.payment,
 			customerName: order.customerName,
 			customerPhone: order.customerPhone,
 			notes: order.notes,
@@ -187,9 +188,15 @@ export function OrderForm({
 		<Form {...form}>
 			<form onSubmit={onSubmit} noValidate className="space-y-6">
 				<FormSection.Root>
-					<FormSection.Header title="Status" />
+					<FormSection.Header title="Status e pagamento" />
 					<FormSection.Content>
 						<Field.Choice name="status" label="Situação do pedido" options={STATUS_OPTIONS} />
+						<Field.Select
+							name="payment"
+							label="Pagamento"
+							description="Escolher um meio de pagamento marca o pedido como pago."
+							options={ORDER_PAYMENTS.map((value) => ({ value, label: ORDER_PAYMENT_LABELS[value] }))}
+						/>
 					</FormSection.Content>
 				</FormSection.Root>
 

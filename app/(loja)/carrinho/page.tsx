@@ -26,7 +26,9 @@ export default function CartPage() {
 					<Cart.Empty />
 					<Cart.Review>
 						<Cart.Lines />
-						<Cart.Summary />
+						<Cart.Summary>
+							<Cart.Customer />
+						</Cart.Summary>
 					</Cart.Review>
 					<Cart.Placed />
 				</Cart.Root>

@@ -91,6 +91,7 @@ test("admin muda status, edita (total recalculado) e exclui", async ({ request }
 
 	const details = {
 		status: "confirmed",
+		payment: "unpaid",
 		customerName: "João",
 		customerPhone: "(19) 99999-8888",
 		notes: "",
@@ -100,6 +101,7 @@ test("admin muda status, edita (total recalculado) e exclui", async ({ request }
 	expect(edited.status()).toBe(200);
 	expect((await edited.json()).data).toMatchObject({
 		status: "confirmed",
+		payment: "unpaid",
 		customerName: "João",
 		customerPhone: "5519999998888",
 		totalInCents: 8000,
@@ -118,4 +120,27 @@ test("rotas que já existiam continuam iguais", async ({ request }) => {
 	expect((await request.post("/api/products", { data: {} })).status()).toBe(401);
 	expect((await request.patch("/api/settings", { data: {} })).status()).toBe(401);
 	expect((await request.post("/api/auth/login", { data: { email: "e2e@local.test", password: "errada" } })).status()).toBe(401);
+});
+
+test("nome e celular do carrinho são gravados e o visitante não marca pagamento", async ({ request }) => {
+	const code = randomOrderCode();
+	const placed = await placeOrder(request, {
+		code,
+		customerName: "Ana",
+		customerPhone: "(11) 91234-5678",
+		payment: "pix",
+		items: [{ productId: "1", quantity: 1 }],
+	});
+	expect(placed.status()).toBe(201);
+	expect((await placeOrder(request, { code: randomOrderCode(), customerPhone: "123", items: [{ productId: "1", quantity: 1 }] })).status()).toBe(422);
+
+	await loginAsAdmin(request);
+	const order = await findOrder(request, code);
+	expect(order).toMatchObject({ customerName: "Ana", customerPhone: "5511912345678", payment: "unpaid" });
+
+	const path = `/api/orders/${order?.id}`;
+	const paid = await request.patch(path, { data: { payment: "cash" } });
+	expect((await paid.json()).data).toMatchObject({ payment: "cash", status: "new" });
+	expect((await request.patch(path, { data: { payment: "fiado" } })).status()).toBe(422);
+	expect((await request.patch(path, { data: {} })).status()).toBe(422);
 });

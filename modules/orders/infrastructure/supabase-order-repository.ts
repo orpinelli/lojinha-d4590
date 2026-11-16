@@ -2,9 +2,11 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toDomainError } from "@/modules/shared/infrastructure/supabase-errors";
 import {
+	ORDER_PAYMENTS,
 	ORDER_STATUSES,
 	type Order,
 	type OrderItem,
+	type OrderPayment,
 	type OrderRepository,
 	type OrderStatus,
 } from "../domain/order";
@@ -13,6 +15,7 @@ type OrderRow = {
 	id: string;
 	code: string;
 	status: string;
+	payment: string;
 	items: unknown;
 	total_in_cents: number;
 	customer_name: string;
@@ -23,7 +26,7 @@ type OrderRow = {
 };
 
 const COLUMNS =
-	"id, code, status, items, total_in_cents, customer_name, customer_phone, notes, created_at, updated_at";
+	"id, code, status, payment, items, total_in_cents, customer_name, customer_phone, notes, created_at, updated_at";
 
 /** `items` is JSON in the database: read it defensively. */
 function toItems(raw: unknown): OrderItem[] {
@@ -46,10 +49,14 @@ function toItems(raw: unknown): OrderItem[] {
 const toStatus = (value: string): OrderStatus =>
 	(ORDER_STATUSES as readonly string[]).includes(value) ? (value as OrderStatus) : "new";
 
+const toPayment = (value: string): OrderPayment =>
+	(ORDER_PAYMENTS as readonly string[]).includes(value) ? (value as OrderPayment) : "unpaid";
+
 const toOrder = (row: OrderRow): Order => ({
 	id: row.id,
 	code: row.code,
 	status: toStatus(row.status),
+	payment: toPayment(row.payment),
 	items: toItems(row.items),
 	totalInCents: row.total_in_cents,
 	customerName: row.customer_name,
@@ -67,8 +74,9 @@ function unwrap<T>({ data, error }: Result<T>): T | null {
 }
 
 /**
- * `public.orders`. Visitors (anon) may only insert the code, items and total
- * of a new order; reading and changing orders is admin-only (RLS + grants).
+ * `public.orders`. Visitors (anon) may only insert a new order (code, items,
+ * total, and the optional name and phone); reading and changing orders is
+ * admin-only (RLS + grants).
  */
 export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepository {
 	const table = () => client.from("orders");
@@ -91,6 +99,9 @@ export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepo
 					code: order.code,
 					items: order.items,
 					total_in_cents: order.totalInCents,
+					// Only sent when filled: an order without them never depends on these columns.
+					...(order.customerName && { customer_name: order.customerName }),
+					...(order.customerPhone && { customer_phone: order.customerPhone }),
 				}),
 			);
 		},
@@ -99,6 +110,7 @@ export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepo
 				await table()
 					.update({
 						status: details.status,
+						payment: details.payment,
 						customer_name: details.customerName,
 						customer_phone: details.customerPhone,
 						notes: details.notes,
@@ -111,9 +123,9 @@ export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepo
 			);
 			return row ? toOrder(row) : null;
 		},
-		async updateStatus(id, status) {
+		async patch(id, changes) {
 			const row = unwrap<OrderRow>(
-				await table().update({ status }).eq("id", id).select(COLUMNS).maybeSingle(),
+				await table().update(changes).eq("id", id).select(COLUMNS).maybeSingle(),
 			);
 			return row ? toOrder(row) : null;
 		},

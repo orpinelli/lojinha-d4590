@@ -1,5 +1,6 @@
 import type { ProductRepository } from "@/modules/catalog/domain/repositories";
 import { ConflictError, NotFoundError, ValidationError } from "@/modules/shared/domain/errors";
+import { yearInBrazil } from "@/modules/shared/domain/dates";
 import { parseInput } from "@/modules/shared/domain/validation";
 import {
 	ORDER_STATUSES,
@@ -9,11 +10,8 @@ import {
 	type OrderRepository,
 	type OrderStatus,
 } from "../domain/order";
-import {
-	checkoutInputSchema,
-	orderDetailsSchema,
-	orderStatusInputSchema,
-} from "../domain/order-schemas";
+import { checkoutInputSchema, orderDetailsSchema, orderPatchSchema } from "../domain/order-schemas";
+import { buildSalesReport, salesYears, type SalesReport } from "../domain/sales-report";
 
 export type OrdersOverview = {
 	/** Newest first, already filtered by status when one was given. */
@@ -35,7 +33,8 @@ export function createOrderService({ orders, products }: Dependencies) {
 	return {
 		/**
 		 * Records the order the visitor is sending by WhatsApp. Names and prices
-		 * come from the catalog. The same code twice (double tap) is ignored.
+		 * come from the catalog; name and phone are optional. The same code twice
+		 * (double tap) is ignored.
 		 */
 		async place(rawInput: unknown): Promise<{ code: string }> {
 			const input = parseInput(checkoutInputSchema, rawInput);
@@ -58,7 +57,13 @@ export function createOrderService({ orders, products }: Dependencies) {
 				};
 			});
 			try {
-				await orders.create({ code: input.code, items, totalInCents: orderTotal(items) });
+				await orders.create({
+					code: input.code,
+					items,
+					totalInCents: orderTotal(items),
+					customerName: input.customerName,
+					customerPhone: input.customerPhone,
+				});
 			} catch (error) {
 				if (!(error instanceof ConflictError)) throw error;
 			}
@@ -82,6 +87,18 @@ export function createOrderService({ orders, products }: Dependencies) {
 
 		get,
 
+		/**
+		 * Sales of a year (Brasília calendar), without canceled orders. An unknown
+		 * or missing year shows the current one.
+		 */
+		async salesReport(year?: number): Promise<{ report: SalesReport; years: number[] }> {
+			const all = await orders.list();
+			const currentYear = yearInBrazil(new Date().toISOString());
+			const years = salesYears(all, currentYear, yearInBrazil);
+			const selected = year !== undefined && years.includes(year) ? year : currentYear;
+			return { report: buildSalesReport(all, selected, yearInBrazil), years };
+		},
+
 		async update(id: string, rawInput: unknown): Promise<Order> {
 			const details = parseInput(orderDetailsSchema, rawInput);
 			const updated = await orders.update(id, details, orderTotal(details.items));
@@ -89,9 +106,10 @@ export function createOrderService({ orders, products }: Dependencies) {
 			return updated;
 		},
 
-		async updateStatus(id: string, rawInput: unknown): Promise<Order> {
-			const { status } = parseInput(orderStatusInputSchema, rawInput);
-			const updated = await orders.updateStatus(id, status);
+		/** Quick change of status and/or payment. */
+		async patch(id: string, rawInput: unknown): Promise<Order> {
+			const changes = parseInput(orderPatchSchema, rawInput);
+			const updated = await orders.patch(id, changes);
 			if (!updated) throw new NotFoundError("Pedido não encontrado.");
 			return updated;
 		},

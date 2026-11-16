@@ -62,3 +62,20 @@ test("o ícone do carrinho mostra a quantidade e abre a página", async ({ page 
 	await expect(page).toHaveURL(/\/carrinho$/);
 	await expect(page.getByRole("list", { name: "Itens do carrinho" })).toContainText("Pin");
 });
+
+test("nome e celular são opcionais, mas o celular preenchido precisa ser válido", async ({ page }) => {
+	const opened = await captureWhatsapp(page);
+	await seedCart(page, [{ productId: "4", name: "Pin", priceInCents: 1500, quantity: 1 }]);
+	await page.goto("/carrinho");
+	const phone = page.getByLabel("Celular (WhatsApp)");
+	await phone.fill("1999");
+	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
+	await expect(page.getByText("Confira o número com DDD, ou deixe em branco.")).toBeVisible();
+	await expect(phone).toBeFocused();
+	expect(opened).toHaveLength(0);
+
+	await phone.fill("");
+	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
+	await expect(page.getByRole("heading", { name: "Pedido pronto!" })).toBeVisible();
+	await expect.poll(() => opened.length).toBe(1);
+});

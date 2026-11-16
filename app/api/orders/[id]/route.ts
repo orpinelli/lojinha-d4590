@@ -16,11 +16,11 @@ export const PUT = handle<Context>(async (request: NextRequest, { params }) => {
 	return ok(await services.orders.update(id, await readJson(request)));
 });
 
-/** Quick status change: `{ "status": "confirmed" }`. */
+/** Quick change: `{ "status": "confirmed" }`, `{ "payment": "pix" }` or both. */
 export const PATCH = handle<Context>(async (request: NextRequest, { params }) => {
 	const { services } = await requireAdmin(request);
 	const { id } = await params;
-	return ok(await services.orders.updateStatus(id, await readJson(request)));
+	return ok(await services.orders.patch(id, await readJson(request)));
 });
 
 export const DELETE = handle<Context>(async (request: NextRequest, { params }) => {

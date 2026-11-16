@@ -1,9 +1,17 @@
 import Image from "next/image";
-import { Package } from "lucide-react";
+import { Package, Phone, UserRound } from "lucide-react";
 import { Price } from "@/components/store/price";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ORDER_STATUS_LABELS, type OrderItem, type OrderStatus } from "@/modules/orders/domain/order";
+import {
+	ORDER_STATUS_LABELS,
+	isPaid,
+	paymentSummary,
+	type OrderItem,
+	type OrderPayment,
+	type OrderStatus,
+} from "@/modules/orders/domain/order";
+import { formatWhatsapp } from "@/modules/shared/domain/phone";
 
 /* Server-compatible pieces shared by the order pages of the admin. */
 
@@ -19,6 +27,34 @@ const STATUS_BADGE = {
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 	return <Badge variant={STATUS_BADGE[status]}>{ORDER_STATUS_LABELS[status]}</Badge>;
+}
+
+/** "Pago · Pix" in green, "Não pago" in amber. */
+export function OrderPaymentBadge({ payment }: { payment: OrderPayment }) {
+	return <Badge variant={isPaid(payment) ? "success" : "warning"}>{paymentSummary(payment)}</Badge>;
+}
+
+/** Who bought: name and phone (both optional, typed in the cart or in the admin). */
+export function OrderCustomer({ name, phone }: { name: string; phone: string }) {
+	if (!name && !phone) {
+		return <p className="text-[13px] font-semibold text-label">Cliente não informou nome nem celular</p>;
+	}
+	return (
+		<p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-foreground">
+			{name && (
+				<span className="inline-flex min-w-0 items-center gap-1.5">
+					<UserRound className="size-4 shrink-0 text-label" aria-hidden />
+					<span className="truncate">{name}</span>
+				</span>
+			)}
+			{phone && (
+				<span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+					<Phone className="size-4 shrink-0 text-label" aria-hidden />
+					{formatWhatsapp(phone)}
+				</span>
+			)}
+		</p>
+	);
 }
 
 /** Orders keep only the product id: the picture comes from the current catalog. */

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ValidationError, type FieldErrors } from "./errors";
+import { isValidWhatsapp, normalizeWhatsapp } from "./phone";
 
 /** Local public path ("/produtos/x.png") or absolute https URL (Supabase Storage). */
 export const assetUrlSchema = z
@@ -26,6 +27,18 @@ export const optionalHttpsUrlSchema = z
 	.refine(
 		(value) => value === "" || isHttpsUrl(value),
 		"Informe um endereço começando com https://.",
+	);
+
+/**
+ * Optional phone/WhatsApp: any typing style is accepted (+55, spaces, dashes);
+ * stored as digits with the country code, "" when not informed.
+ */
+export const optionalPhoneSchema = z
+	.string()
+	.transform(normalizeWhatsapp)
+	.refine(
+		(digits) => digits === "" || isValidWhatsapp(digits),
+		"Número inválido. Confira o DDD e os dígitos.",
 	);
 
 function isHttpsUrl(value: string): boolean {

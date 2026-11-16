@@ -1,13 +1,18 @@
 import { z } from "zod";
-import { isValidWhatsapp, normalizeWhatsapp } from "@/modules/shared/domain/phone";
-import { ORDER_STATUSES, isOrderCode } from "./order";
+import { optionalPhoneSchema } from "@/modules/shared/domain/validation";
+import { ORDER_PAYMENTS, ORDER_STATUSES, isOrderCode } from "./order";
+
+const customerNameSchema = z.string().trim().max(120, "Use no máximo 120 caracteres.");
 
 /**
  * Public: what the cart sends when the visitor finishes. Only ids, sizes and
  * quantities — names and prices always come from the catalog on the server.
+ * Name and phone are optional.
  */
 export const checkoutInputSchema = z.object({
 	code: z.string().refine(isOrderCode, "Código do pedido inválido."),
+	customerName: customerNameSchema.default(""),
+	customerPhone: optionalPhoneSchema.default(""),
 	items: z
 		.array(
 			z.object({
@@ -40,17 +45,15 @@ export const orderItemSchema = z.object({
 		.max(10_000_000, "Preço alto demais."),
 });
 
+const statusSchema = z.enum(ORDER_STATUSES, { error: "Escolha o status." });
+const paymentSchema = z.enum(ORDER_PAYMENTS, { error: "Escolha o pagamento." });
+
 /** Admin edit: everything except the code and the dates. The total is recalculated. */
 export const orderDetailsSchema = z.object({
-	status: z.enum(ORDER_STATUSES, { error: "Escolha o status." }),
-	customerName: z.string().trim().max(120, "Use no máximo 120 caracteres."),
-	customerPhone: z
-		.string()
-		.transform(normalizeWhatsapp)
-		.refine(
-			(digits) => digits === "" || isValidWhatsapp(digits),
-			"Telefone inválido. Confira o DDD e os dígitos.",
-		),
+	status: statusSchema,
+	payment: paymentSchema,
+	customerName: customerNameSchema,
+	customerPhone: optionalPhoneSchema,
 	notes: z.string().trim().max(1000, "Use no máximo 1000 caracteres."),
 	items: z
 		.array(orderItemSchema)
@@ -58,9 +61,11 @@ export const orderDetailsSchema = z.object({
 		.max(100, "Itens demais."),
 });
 
-export const orderStatusInputSchema = z.object({
-	status: z.enum(ORDER_STATUSES, { error: "Escolha o status." }),
-});
+/** Quick change from the order page: `{ status }`, `{ payment }` or both. */
+export const orderPatchSchema = z
+	.object({ status: statusSchema.optional(), payment: paymentSchema.optional() })
+	.refine((patch) => patch.status !== undefined || patch.payment !== undefined, "Nada para alterar.");
 
 export type CheckoutInput = z.input<typeof checkoutInputSchema>;
 export type OrderDetailsInput = z.input<typeof orderDetailsSchema>;
+export type OrderPatchInput = z.input<typeof orderPatchSchema>;

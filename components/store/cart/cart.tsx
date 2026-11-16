@@ -2,28 +2,62 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { createContext, useContext, useState, type ComponentProps, type ReactNode } from "react";
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useId,
+	useRef,
+	useState,
+	type ComponentProps,
+	type ReactNode,
+	type RefObject,
+} from "react";
 import { CircleCheck, MessageCircle, ShoppingCart, Trash2 } from "lucide-react";
 import { Price } from "@/components/store/price";
 import { QuantityStepper } from "@/components/store/quantity-stepper";
 import { ShippingBadge } from "@/components/store/store-badges";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { SectionLabel } from "@/components/ui/section-label";
 import { useCart, type CartItem } from "@/contexts/cart-context";
 import { useSiteSettings } from "@/contexts/site-settings-context";
-import { useCheckout, type PlacedOrder } from "@/hooks/use-checkout";
+import { useCheckout, type CheckoutCustomer, type PlacedOrder } from "@/hooks/use-checkout";
 import { cn } from "@/lib/utils";
 import { productPath } from "@/modules/catalog/domain/product";
+import { isValidWhatsapp, normalizeWhatsapp, onlyDigits } from "@/modules/shared/domain/phone";
 
 /*
  * Cart page parts. Each state part (Loading, Empty, Review, Placed) renders
  * only in its own state, so a page composes all of them and the right one shows.
  */
 
+/** Name and phone are remembered in this browser for the next order. */
+const CUSTOMER_KEY = "rotaract-customer";
+
 type CartPageContextValue = {
 	placed: PlacedOrder | null;
 	checkout: () => void;
+	/** Optional details typed by the visitor (phone as digits). */
+	customer: CheckoutCustomer;
+	setCustomer: (changes: Partial<CheckoutCustomer>) => void;
+	phoneError: string | null;
+	phoneInputRef: RefObject<HTMLInputElement | null>;
 };
+
+const PHONE_ERROR = "Confira o número com DDD, ou deixe em branco.";
+
+function readSavedCustomer(): CheckoutCustomer | null {
+	try {
+		const saved = JSON.parse(localStorage.getItem(CUSTOMER_KEY) ?? "null") as Partial<CheckoutCustomer> | null;
+		if (!saved || typeof saved.name !== "string" || typeof saved.phone !== "string") return null;
+		return { name: saved.name.slice(0, 120), phone: onlyDigits(saved.phone).slice(0, 15) };
+	} catch {
+		return null; // blocked or corrupted storage: start empty
+	}
+}
 
 const CartPageContext = createContext<CartPageContextValue | null>(null);
 
@@ -46,15 +80,63 @@ function useCartState(): CartState {
 export function CartRoot({ children }: { children: ReactNode }) {
 	const runCheckout = useCheckout();
 	const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+	const [customer, setCustomerState] = useState<CheckoutCustomer>({ name: "", phone: "" });
+	const [customerLoaded, setCustomerLoaded] = useState(false);
+	const [phoneError, setPhoneError] = useState<string | null>(null);
+	const phoneInputRef = useRef<HTMLInputElement | null>(null);
+
+	useEffect(() => {
+		const saved = readSavedCustomer();
+		if (saved) setCustomerState(saved);
+		setCustomerLoaded(true);
+	}, []);
+
+	useEffect(() => {
+		// Only after loading, otherwise the empty initial state would erase what was saved.
+		if (!customerLoaded) return;
+		try {
+			localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
+		} catch {
+			// Private mode / blocked storage: works for this visit only.
+		}
+	}, [customer, customerLoaded]);
+
+	const setCustomer = (changes: Partial<CheckoutCustomer>) => {
+		setCustomerState((current) => ({ ...current, ...changes }));
+		if (changes.phone !== undefined) setPhoneError(null);
+	};
+
+	/**
+	 * The phone is optional, but when filled it must be a real number. Checked only
+	 * when finishing: validating on blur would show the message right as the button
+	 * is pressed, pushing it down so the click misses.
+	 */
+	const validatePhone = () => {
+		const phone = normalizeWhatsapp(customer.phone);
+		const valid = phone === "" || isValidWhatsapp(phone);
+		setPhoneError(valid ? null : PHONE_ERROR);
+		return valid;
+	};
+
 	const checkout = () => {
-		const order = runCheckout();
+		if (!validatePhone()) {
+			phoneInputRef.current?.focus();
+			return;
+		}
+		const order = runCheckout({
+			name: customer.name.trim(),
+			phone: normalizeWhatsapp(customer.phone),
+		});
 		if (order) {
 			setPlaced(order);
 			window.scrollTo({ top: 0 });
 		}
 	};
+
 	return (
-		<CartPageContext.Provider value={{ placed, checkout }}>
+		<CartPageContext.Provider
+			value={{ placed, checkout, customer, setCustomer, phoneError, phoneInputRef }}
+		>
 			<div className="space-y-6 sm:space-y-8">{children}</div>
 		</CartPageContext.Provider>
 	);
@@ -191,8 +273,54 @@ export function CartLines() {
 	);
 }
 
-/** Totals + the confirm button. Sticky beside the items on desktop. */
-export function CartSummary() {
+/** Optional name and phone: only feed the store's order history. */
+export function CartCustomer() {
+	const { customer, setCustomer, phoneError, phoneInputRef } = useCartPage();
+	const titleId = useId();
+	const nameId = useId();
+	const phoneId = useId();
+	const errorId = useId();
+	return (
+		<div role="group" aria-labelledby={titleId} className="space-y-4 border-t-2 pt-5">
+			<p id={titleId} className="text-sm font-extrabold text-foreground">
+				Seus dados <span className="font-semibold text-muted-foreground">(opcional)</span>
+			</p>
+			<div className="space-y-2">
+				<Label htmlFor={nameId}>Nome</Label>
+				<Input
+					id={nameId}
+					autoComplete="name"
+					maxLength={120}
+					placeholder="Como podemos te chamar?"
+					value={customer.name}
+					onChange={(event) => setCustomer({ name: event.target.value })}
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor={phoneId}>Celular (WhatsApp)</Label>
+				<PhoneInput
+					id={phoneId}
+					ref={phoneInputRef}
+					value={customer.phone}
+					onValueChange={(phone) => setCustomer({ phone })}
+					aria-invalid={phoneError ? true : undefined}
+					aria-describedby={phoneError ? errorId : undefined}
+				/>
+				{phoneError && (
+					<p id={errorId} role="alert" className="text-sm font-bold text-destructive">
+						{phoneError}
+					</p>
+				)}
+			</div>
+			<p className="text-[13px] text-muted-foreground">
+				Não é obrigatório. Ajuda a loja a saber de quem é o pedido.
+			</p>
+		</div>
+	);
+}
+
+/** Totals + the confirm button (children, e.g. Cart.Customer, go right above it). */
+export function CartSummary({ children }: { children?: ReactNode }) {
 	const { count, totalInCents } = useCart();
 	const { checkout } = useCartPage();
 	const { labels } = useSiteSettings();
@@ -228,6 +356,7 @@ export function CartSummary() {
 					</dd>
 				</div>
 			</dl>
+			{children}
 			<div className="space-y-3 pb-1">
 				<Button block size="lg" onClick={checkout}>
 					<MessageCircle /> Finalizar pelo WhatsApp

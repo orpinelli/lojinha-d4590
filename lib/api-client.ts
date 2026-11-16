@@ -4,8 +4,8 @@ import type {
 	Product,
 	ProductInput,
 } from "@/modules/catalog/domain/product";
-import type { Order, OrderStatus } from "@/modules/orders/domain/order";
-import type { CheckoutInput, OrderDetailsInput } from "@/modules/orders/domain/order-schemas";
+import type { Order } from "@/modules/orders/domain/order";
+import type { CheckoutInput, OrderDetailsInput, OrderPatchInput } from "@/modules/orders/domain/order-schemas";
 import type { SettingsPatch, SiteSettings } from "@/modules/settings/domain/site-settings";
 import type { Showcase, ShowcaseInput } from "@/modules/showcase/domain/showcase";
 
@@ -99,8 +99,8 @@ export const adminApi = {
 
 	updateOrder: (id: string, input: OrderDetailsInput) =>
 		request<Order>(resource("/api/orders", id), json("PUT", input)),
-	updateOrderStatus: (id: string, status: OrderStatus) =>
-		request<Order>(resource("/api/orders", id), json("PATCH", { status })),
+	patchOrder: (id: string, changes: OrderPatchInput) =>
+		request<Order>(resource("/api/orders", id), json("PATCH", changes)),
 	deleteOrder: (id: string) =>
 		request<void>(resource("/api/orders", id), { method: "DELETE" }),
 

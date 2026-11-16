@@ -3,7 +3,14 @@ import { ClipboardList, DatabaseZap, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/actions";
 import { EmptyState, FilterTabs, PageHeader, ResourceList } from "@/components/admin/blocks";
-import { ORDERS_PATH, OrderStatusBadge, OrderThumb, orderPath } from "@/components/admin/orders";
+import {
+	ORDERS_PATH,
+	OrderCustomer,
+	OrderPaymentBadge,
+	OrderStatusBadge,
+	OrderThumb,
+	orderPath,
+} from "@/components/admin/orders";
 import { Price } from "@/components/store/price";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
@@ -113,14 +120,15 @@ export default async function OrdersPage({ searchParams }: Props) {
 											Pedido #{order.code}
 										</Link>
 									</ResourceList.Title>
+									<OrderCustomer name={order.customerName} phone={order.customerPhone} />
 									<ResourceList.Meta>
 										<OrderStatusBadge status={order.status} />
+										<OrderPaymentBadge payment={order.payment} />
 										<span>{formatDateTime(order.createdAt)}</span>
 										<span>
 											{units} {units === 1 ? "item" : "itens"}
 										</span>
 										<Price cents={order.totalInCents} className="font-extrabold text-foreground" />
-										{order.customerName && <span className="max-w-full truncate">{order.customerName}</span>}
 									</ResourceList.Meta>
 								</ResourceList.Content>
 								<ResourceList.Actions>

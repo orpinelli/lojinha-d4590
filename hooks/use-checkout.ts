@@ -9,6 +9,9 @@ import { generateOrderCode } from "@/modules/orders/domain/order";
 import { buildOrderMessage } from "@/modules/orders/domain/order-message";
 import { whatsappMessageUrl } from "@/modules/shared/domain/whatsapp";
 
+/** Optional details the visitor typed in the cart (phone: digits with the country code). */
+export type CheckoutCustomer = { name: string; phone: string };
+
 /** What the confirmation screen shows after the cart was sent. */
 export type PlacedOrder = {
 	/** Also written in the WhatsApp message, to find the order in the panel. */
@@ -29,7 +32,7 @@ export function useCheckout() {
 	const { items, clear } = useCart();
 	const { contact } = useSiteSettings();
 
-	return useCallback((): PlacedOrder | null => {
+	return useCallback((customer: CheckoutCustomer): PlacedOrder | null => {
 		if (items.length === 0) return null;
 		const code = generateOrderCode();
 		const whatsappUrl = whatsappMessageUrl(
@@ -42,6 +45,8 @@ export function useCheckout() {
 		storeApi
 			.placeOrder({
 				code,
+				customerName: customer.name,
+				customerPhone: customer.phone,
 				items: items.map(({ productId, size, quantity }) => ({ productId, size, quantity })),
 			})
 			.catch((error) => console.warn("[pedido] não foi registrado no painel", error));

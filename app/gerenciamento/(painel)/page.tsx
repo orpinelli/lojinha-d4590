@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+	ChartColumn,
 	ClipboardList,
 	Database,
 	FileText,
@@ -77,6 +78,7 @@ export default async function DashboardPage() {
 			<SectionLabel className="mt-10 mb-4">Atalhos</SectionLabel>
 			<div className="grid gap-3 md:grid-cols-2">
 				<ShortcutCard href="/gerenciamento/pedidos" icon={<ClipboardList />} title="Pedidos" description="Histórico do que foi enviado pelo WhatsApp." />
+				<ShortcutCard href="/gerenciamento/vendas" icon={<ChartColumn />} title="Vendas" description="Total do ano e quanto vendeu de cada produto." />
 				<ShortcutCard href="/gerenciamento/vitrines" icon={<GalleryHorizontalEnd />} title="Vitrines" description="Seções da página inicial e a ordem delas." />
 				<ShortcutCard href="/gerenciamento/produtos" icon={<Package />} title="Produtos" description="Preços, fotos, tamanhos e descrições." />
 				<ShortcutCard href="/gerenciamento/categorias" icon={<Tags />} title="Categorias" description="Organize os produtos por tipo." />

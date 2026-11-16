@@ -2,11 +2,22 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { ConflictError } from "@/modules/shared/domain/errors";
 import { createJsonFileStore } from "@/modules/shared/infrastructure/json-file-store";
-import type { Order, OrderRepository } from "../domain/order";
+import { ORDER_PAYMENTS, type Order, type OrderRepository } from "../domain/order";
+
+/** Orders saved before a field existed get its default. */
+function normalizeOrders(raw: unknown): Order[] {
+	if (!Array.isArray(raw)) return [];
+	return raw.map((order: Order) => ({
+		...order,
+		payment: (ORDER_PAYMENTS as readonly string[]).includes(order.payment) ? order.payment : "unpaid",
+		customerName: order.customerName ?? "",
+		customerPhone: order.customerPhone ?? "",
+	}));
+}
 
 /** File-backed adapter used in local development (`DATA_PROVIDER=local`). */
 export function createLocalOrderRepository(filePath: string): OrderRepository {
-	const store = createJsonFileStore<Order[]>({ filePath, seed: () => [] });
+	const store = createJsonFileStore<Order[]>({ filePath, seed: () => [], normalize: normalizeOrders });
 	const now = () => new Date().toISOString();
 	const find = async (id: string) => (await store.read()).find((order) => order.id === id);
 
@@ -36,8 +47,7 @@ export function createLocalOrderRepository(filePath: string): OrderRepository {
 					...order,
 					id: randomUUID(),
 					status: "new",
-					customerName: "",
-					customerPhone: "",
+					payment: "unpaid",
 					notes: "",
 					createdAt: timestamp,
 					updatedAt: timestamp,
@@ -46,7 +56,7 @@ export function createLocalOrderRepository(filePath: string): OrderRepository {
 		},
 		update: (id, details, totalInCents) =>
 			change(id, (order) => ({ ...order, ...details, totalInCents })),
-		updateStatus: (id, status) => change(id, (order) => ({ ...order, status })),
+		patch: (id, changes) => change(id, (order) => ({ ...order, ...changes })),
 		async delete(id) {
 			if (!(await find(id))) return false;
 			return store.update((orders) => {

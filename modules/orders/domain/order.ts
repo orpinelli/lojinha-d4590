@@ -21,6 +21,37 @@ export const ORDER_STATUS_GROUP_LABELS: Record<OrderStatus, string> = {
 	canceled: "Cancelados",
 };
 
+/** "unpaid" or how the customer paid: one field, so the two can never disagree. */
+export const ORDER_PAYMENTS = [
+	"unpaid",
+	"pix",
+	"cash",
+	"credit_card",
+	"debit_card",
+	"bank_transfer",
+	"other",
+] as const;
+export type OrderPayment = (typeof ORDER_PAYMENTS)[number];
+
+export const ORDER_PAYMENT_LABELS: Record<OrderPayment, string> = {
+	unpaid: "Não pago",
+	pix: "Pix",
+	cash: "Dinheiro",
+	credit_card: "Cartão de crédito",
+	debit_card: "Cartão de débito",
+	bank_transfer: "Transferência",
+	other: "Outro",
+};
+
+export function isPaid(payment: OrderPayment): boolean {
+	return payment !== "unpaid";
+}
+
+/** "Pago · Pix" or "Não pago". */
+export function paymentSummary(payment: OrderPayment): string {
+	return isPaid(payment) ? `Pago · ${ORDER_PAYMENT_LABELS[payment]}` : ORDER_PAYMENT_LABELS.unpaid;
+}
+
 /**
  * Snapshot of a product at order time: later catalog changes (price, name)
  * don't change orders already made.
@@ -37,8 +68,10 @@ export type OrderItem = {
 /** Everything the admin can edit. */
 export type OrderDetails = {
 	status: OrderStatus;
+	payment: OrderPayment;
+	/** Optional, typed by the customer in the cart or by the admin. */
 	customerName: string;
-	/** Digits only, with the country code ("" when unknown). */
+	/** Digits only, with the country code ("" when not informed). */
 	customerPhone: string;
 	notes: string;
 	items: OrderItem[];
@@ -54,7 +87,10 @@ export type Order = OrderDetails & {
 };
 
 /** What the storefront records when the visitor finishes the cart. */
-export type NewOrder = Pick<Order, "code" | "items" | "totalInCents">;
+export type NewOrder = Pick<Order, "code" | "items" | "totalInCents" | "customerName" | "customerPhone">;
+
+/** Quick changes made from the order page (one tap). */
+export type OrderPatch = Partial<Pick<OrderDetails, "status" | "payment">>;
 
 export function orderTotal(items: Pick<OrderItem, "quantity" | "unitPriceInCents">[]): number {
 	return items.reduce((total, item) => total + item.quantity * item.unitPriceInCents, 0);
@@ -100,11 +136,11 @@ export interface OrderRepository {
 	list(): Promise<Order[]>;
 	findById(id: string): Promise<Order | null>;
 	/**
-	 * Visitors only insert (they never read orders back). Starts as "new" with
-	 * empty customer fields. A repeated code throws ConflictError.
+	 * Visitors only insert (they never read orders back). Starts as "new" and
+	 * "unpaid". A repeated code throws ConflictError.
 	 */
 	create(order: NewOrder): Promise<void>;
 	update(id: string, details: OrderDetails, totalInCents: number): Promise<Order | null>;
-	updateStatus(id: string, status: OrderStatus): Promise<Order | null>;
+	patch(id: string, changes: OrderPatch): Promise<Order | null>;
 	delete(id: string): Promise<boolean>;
 }
