@@ -3,7 +3,7 @@ import { FeaturedShowcase, ShowcaseBlock } from "@/components/store/showcases";
 import { SiteHeader, type SiteNavItem } from "@/components/store/site-header";
 import { Button } from "@/components/ui/button";
 import { getHomeShowcases, getSiteSettings } from "@/lib/server/queries";
-import { whatsappChatUrl } from "@/modules/cart/domain/order-message";
+import { whatsappChatUrl } from "@/modules/shared/domain/whatsapp";
 import { slugify } from "@/modules/shared/domain/text";
 
 /** Unique, readable anchors per showcase (e.g. #vestuario). */

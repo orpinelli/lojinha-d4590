@@ -9,7 +9,8 @@ import { QuantityStepper } from "@/components/store/quantity-stepper";
 import { Button } from "@/components/ui/button";
 import { useCart, type CartItem } from "@/contexts/cart-context";
 import { useSiteSettings } from "@/contexts/site-settings-context";
-import { buildOrderMessage, whatsappOrderUrl } from "@/modules/cart/domain/order-message";
+import { buildOrderMessage } from "@/modules/cart/domain/order-message";
+import { whatsappMessageUrl } from "@/modules/shared/domain/whatsapp";
 
 export function CartSheet({ children }: { children: ReactNode }) {
 	const { isOpen, setOpen } = useCart();
@@ -110,7 +111,7 @@ export function CartFooter() {
 	if (items.length === 0) return null;
 
 	const checkout = () => {
-		const url = whatsappOrderUrl(
+		const url = whatsappMessageUrl(
 			contact.whatsappNumber,
 			buildOrderMessage(items, contact.orderGreeting),
 		);
