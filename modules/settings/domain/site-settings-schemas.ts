@@ -4,6 +4,7 @@ import {
 	hexColorSchema,
 	optionalHttpsUrlSchema,
 } from "@/modules/shared/domain/validation";
+import { isValidWhatsapp, normalizeWhatsapp } from "@/modules/shared/domain/phone";
 
 const text = (max: number) =>
 	z.string().trim().max(max, `Use no máximo ${max} caracteres.`);
@@ -42,13 +43,11 @@ export const labelsSchema = z.object({
 });
 
 export const contactSchema = z.object({
+	/** Any typing style is accepted; stored as digits only, with the country code. */
 	whatsappNumber: z
 		.string()
-		.trim()
-		.regex(
-			/^\d{10,15}$/,
-			"Use só números, com DDI e DDD. Ex.: 5519999999999.",
-		),
+		.transform(normalizeWhatsapp)
+		.refine(isValidWhatsapp, "Número inválido. Confira o DDD e os dígitos. Ex.: +55 19 99999-9999."),
 	orderGreeting: text(300).min(1, "Informe a mensagem inicial do pedido."),
 	instagramUrl: optionalHttpsUrlSchema,
 });
@@ -83,6 +82,16 @@ export type SiteSettings = z.infer<typeof siteSettingsSchema>;
 export type SettingsPatch = Partial<SiteSettings>;
 export type ThemeSettings = SiteSettings["theme"];
 
+/**
+ * Reading is more lenient than saving: a WhatsApp number saved under the older,
+ * looser rule keeps showing (instead of the whole contact section falling back
+ * to defaults) and can be corrected in the panel, where the strict rule applies.
+ */
+const storedSectionSchemas = {
+	...settingsSectionSchemas,
+	contact: contactSchema.extend({ whatsappNumber: z.string().transform(normalizeWhatsapp) }),
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -104,7 +113,7 @@ export function normalizeSiteSettings(
 			...defaults[section],
 			...(isRecord(storedSection) ? storedSection : {}),
 		};
-		const parsed = settingsSectionSchemas[section].safeParse(candidate);
+		const parsed = storedSectionSchemas[section].safeParse(candidate);
 		result[section] = parsed.success ? parsed.data : defaults[section];
 	}
 	return result as SiteSettings;

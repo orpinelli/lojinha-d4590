@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import { useRef, type ComponentProps } from "react";
 import { useFormContext } from "react-hook-form";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/modules/shared/domain/money";
+import { formatWhatsapp, limitWhatsappDigits, normalizeWhatsapp, onlyDigits } from "@/modules/shared/domain/phone";
 import { FieldFrame, type BaseFieldProps } from "./field-frame";
 
 type InputProps = Omit<ComponentProps<typeof Input>, "name" | "value" | "onChange" | "defaultValue">;
@@ -102,6 +103,81 @@ export function MoneyField({ name, label, description, className }: BaseFieldPro
 						onChange={(event) => {
 							const digits = event.target.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 9);
 							field.onChange(digits ? Number.parseInt(digits, 10) : 0);
+						}}
+					/>
+				</FieldFrame>
+			)}
+		/>
+	);
+}
+
+/** Cursor position in the masked text right after the n-th digit. */
+function positionAfterDigits(masked: string, count: number): number {
+	let position = 0;
+	for (let seen = 0; position < masked.length && seen < count; position++) {
+		if (/\d/.test(masked[position])) seen++;
+	}
+	return position;
+}
+
+/**
+ * WhatsApp mask: any typing style (+, spaces, dashes, parentheses) is accepted
+ * and shown as "+55 19 99166-6588". The form keeps only the digits; on leaving
+ * the field a Brazilian number typed without the 55 gets it added.
+ */
+export function PhoneField({
+	name,
+	label,
+	description,
+	className,
+	placeholder = "+55 19 99999-9999",
+}: BaseFieldProps & { placeholder?: string }) {
+	const { control } = useFormContext();
+	const inputRef = useRef<HTMLInputElement | null>(null);
+	return (
+		<FormField
+			control={control}
+			name={name}
+			render={({ field }) => (
+				<FieldFrame label={label} description={description} className={className}>
+					<Input
+						type="tel"
+						inputMode="tel"
+						autoComplete="tel"
+						placeholder={placeholder}
+						name={field.name}
+						ref={(element) => {
+							field.ref(element);
+							inputRef.current = element;
+						}}
+						value={formatWhatsapp(field.value ?? "")}
+						onBlur={() => {
+							field.onChange(normalizeWhatsapp(field.value ?? ""));
+							field.onBlur();
+						}}
+						onChange={(event) => {
+							const input = event.target;
+							const previous = onlyDigits(field.value ?? "");
+							let digits = onlyDigits(input.value);
+							let caret = onlyDigits(input.value.slice(0, input.selectionStart ?? input.value.length)).length;
+							// Backspace right after a space or dash: delete the digit before it
+							const deletedSeparator =
+								digits === previous && (event.nativeEvent as InputEvent).inputType === "deleteContentBackward";
+							if (deletedSeparator && caret > 0) {
+								digits = digits.slice(0, caret - 1) + digits.slice(caret);
+								caret -= 1;
+							}
+							digits = limitWhatsappDigits(digits);
+							caret = Math.min(caret, digits.length);
+							field.onChange(digits);
+							// Once the mask is reapplied, keep the cursor after the same digit
+							requestAnimationFrame(() => {
+								const element = inputRef.current;
+								if (element && document.activeElement === element) {
+									const position = positionAfterDigits(element.value, caret);
+									element.setSelectionRange(position, position);
+								}
+							});
 						}}
 					/>
 				</FieldFrame>

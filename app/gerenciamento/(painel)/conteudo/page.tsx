@@ -61,12 +61,10 @@ export default async function ContentPage() {
 				<SettingsForm.Root section="contact" defaultValues={contact}>
 					<SettingsForm.Header title="Contato e pedidos" description="Os pedidos do carrinho são enviados por WhatsApp." />
 					<SettingsForm.Content>
-						<Field.Text
+						<Field.Phone
 							name="whatsappNumber"
 							label="WhatsApp que recebe os pedidos"
-							description="Somente números, com 55 + DDD. Ex.: 5519999999999"
-							inputMode="numeric"
-							maxLength={15}
+							description="Digite com DDD, do jeito que preferir: com ou sem +55, espaços ou traço."
 						/>
 						<Field.Textarea name="orderGreeting" label="Mensagem inicial do pedido" rows={2} />
 						<Field.Text
