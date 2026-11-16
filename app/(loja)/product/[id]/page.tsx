@@ -45,6 +45,7 @@ export default async function ProductPage({ params }: Props) {
 					<ProductGallery.Root images={product.images} alt={product.name}>
 						<ProductGallery.Main />
 						<ProductGallery.Thumbnails />
+						<ProductGallery.Viewer />
 					</ProductGallery.Root>
 
 					<div className="min-w-0 space-y-6 sm:space-y-8">

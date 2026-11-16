@@ -4,6 +4,10 @@ Loja do Rotaract Distrito 4590 com painel de gerenciamento em `/gerenciamento`:
 pedidos, vitrines, produtos, imagens, preços, categorias, logo, cores, textos e
 contato são todos editáveis pelo painel.
 
+**Fotos do produto**: com o mouse, a foto aumenta e acompanha o cursor; um
+clique (ou toque no celular) abre a tela cheia, com pinça ou toque duplo para
+ampliar, arrastar para ver os detalhes e deslizar entre as fotos.
+
 **Carrinho (`/carrinho`)**: o visitante revisa os itens (tamanho, quantidade,
 remover) e o total antes de confirmar, e pode informar nome e celular (os dois
 são opcionais). "Finalizar pelo WhatsApp" abre a conversa com o pedido já
