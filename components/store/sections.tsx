@@ -6,11 +6,15 @@ import { cn } from "@/lib/utils";
 
 /* Server-compatible compound components for the storefront layout. */
 
+/**
+ * Compact store title over a soft tint, right under the fixed header (h-16):
+ * the first screen is left to the products.
+ */
 function HeroRoot({ className, children, ...props }: ComponentProps<"section">) {
 	return (
 		<section
 			className={cn(
-				"bg-[linear-gradient(to_bottom,color-mix(in_oklab,var(--primary)_12%,var(--background)),var(--background))] px-5 pt-[104px] pb-10 min-[600px]:px-10 min-[600px]:pt-[120px]",
+				"bg-[linear-gradient(to_bottom,color-mix(in_oklab,var(--primary)_12%,var(--background)),var(--background))] px-4 pt-[88px] pb-5 sm:px-6 sm:pt-24 sm:pb-6 lg:px-10",
 				className,
 			)}
 			{...props}
@@ -24,7 +28,7 @@ function HeroTitle({ className, ...props }: ComponentProps<"h1">) {
 	return (
 		<h1
 			className={cn(
-				"font-display text-[28px] leading-[1.1] font-semibold break-words text-primary min-[600px]:text-[36px] min-[900px]:text-[52px]",
+				"font-display text-[26px] leading-tight font-semibold text-balance break-words text-primary sm:text-[32px] lg:text-[40px]",
 				className,
 			)}
 			{...props}
@@ -32,57 +36,34 @@ function HeroTitle({ className, ...props }: ComponentProps<"h1">) {
 	);
 }
 
+/** Second part of the title, on the same line, in the text color. */
 function HeroHighlight({ className, ...props }: ComponentProps<"span">) {
-	return <span className={cn("block text-foreground", className)} {...props} />;
-}
-
-function HeroSubtitle({ className, ...props }: ComponentProps<"p">) {
-	return (
-		<p
-			className={cn("mt-4 max-w-[520px] text-[17px] leading-normal text-muted-foreground", className)}
-			{...props}
-		/>
-	);
-}
-
-/** Buttons stack (max 280px wide) on phones and tablets, side by side on desktop. */
-function HeroActions({ className, ...props }: ComponentProps<"div">) {
-	return (
-		<div
-			className={cn(
-				"mt-8 flex w-full flex-col items-center gap-3 pb-1 *:w-full *:max-w-[280px] min-[900px]:w-auto min-[900px]:flex-row min-[900px]:*:w-auto min-[900px]:*:max-w-none",
-				className,
-			)}
-			{...props}
-		/>
-	);
+	return <span className={cn("text-foreground", className)} {...props} />;
 }
 
 export const Hero = {
 	Root: HeroRoot,
 	Title: HeroTitle,
 	Highlight: HeroHighlight,
-	Subtitle: HeroSubtitle,
-	Actions: HeroActions,
 };
 
 function ShowcaseSectionRoot({ className, children, ...props }: ComponentProps<"section">) {
 	return (
-		<section className={cn("scroll-mt-20 px-4 py-10 sm:px-6 sm:py-14 lg:px-10", className)} {...props}>
+		<section className={cn("scroll-mt-20 px-4 py-8 sm:px-6 sm:py-10 lg:px-10", className)} {...props}>
 			<div className="mx-auto w-full max-w-[1440px]">{children}</div>
 		</section>
 	);
 }
 
 function ShowcaseSectionHeader({ className, ...props }: ComponentProps<"div">) {
-	return <div className={cn("mb-6 space-y-2 sm:mb-8", className)} {...props} />;
+	return <div className={cn("mb-4 space-y-1.5 sm:mb-5", className)} {...props} />;
 }
 
 function ShowcaseSectionTitle({ className, ...props }: ComponentProps<"h2">) {
 	return (
 		<h2
 			className={cn(
-				"font-display text-2xl leading-tight font-semibold break-words text-foreground sm:text-[28px]",
+				"font-display text-[22px] leading-tight font-semibold break-words text-foreground sm:text-[26px]",
 				className,
 			)}
 			{...props}

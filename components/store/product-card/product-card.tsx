@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import {
 	createContext,
 	useCallback,
@@ -15,7 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Price } from "@/components/store/price";
 import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { SizeSelect } from "@/components/store/size-select";
-import { FeaturedBadge, ShippingBadge } from "@/components/store/store-badges";
+import { FeaturedBadge } from "@/components/store/store-badges";
 import { Button } from "@/components/ui/button";
 import { useAddToCart } from "@/hooks/use-add-to-cart";
 import { cn } from "@/lib/utils";
@@ -148,12 +149,6 @@ export function ProductCardTitle({
 	);
 }
 
-export function ProductCardDescription({ className }: { className?: string }) {
-	const { product } = useProductCard();
-	if (!product.description) return null;
-	return <p className={cn("text-muted-foreground", className)}>{product.description}</p>;
-}
-
 export function ProductCardPrice({ className }: { className?: string }) {
 	const { product } = useProductCard();
 	return <Price cents={product.priceInCents} className={cn("font-display", className)} />;
@@ -208,16 +203,33 @@ export function ProductCardAddButton({
 	);
 }
 
+/** "Ver detalhes": a secondary button, or a light text link (`variant="link"`). */
 export function ProductCardDetailsLink({
 	className,
 	size = "md",
+	variant = "button",
 	children = "Ver detalhes",
 }: {
 	className?: string;
 	size?: "sm" | "md";
+	variant?: "button" | "link";
 	children?: ReactNode;
 }) {
 	const { product } = useProductCard();
+	if (variant === "link") {
+		return (
+			<Link
+				href={productPath(product)}
+				className={cn(
+					"inline-flex items-center gap-1.5 rounded-md text-sm font-extrabold text-link underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-link/40",
+					className,
+				)}
+			>
+				{children}
+				<ArrowRight className="size-4" strokeWidth={3} aria-hidden />
+			</Link>
+		);
+	}
 	return (
 		<Button asChild block variant="secondary" size={size === "md" ? "lg" : "sm"} className={className}>
 			<Link href={productPath(product)}>{children}</Link>
@@ -229,5 +241,3 @@ export function ProductCardDetailsLink({
 export function ProductCardFeaturedBadge(props: { label?: string; className?: string }) {
 	return <FeaturedBadge {...props} />;
 }
-
-export { ShippingBadge as ProductCardShippingBadge };

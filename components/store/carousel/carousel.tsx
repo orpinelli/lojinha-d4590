@@ -43,7 +43,11 @@ export function CarouselRoot({ className, ...props }: ComponentProps<"div">) {
 	);
 }
 
-/** Each child becomes a slide; works with Server Component children. */
+/**
+ * Each child becomes a slide; works with Server Component children. Swiper's
+ * stylesheet resets the container padding and beats Tailwind's layered
+ * utilities, so spacing classes need `!` (e.g. `!pb-10` leaves room for the dots).
+ */
 export function CarouselViewport({
 	children,
 	className,
@@ -77,6 +81,8 @@ export function CarouselViewport({
 			onSwiper={(instance) => {
 				setSwiper(instance);
 				setLocked(instance.isLocked);
+				// No sliding on its own for those who asked the system for less motion.
+				if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) instance.autoplay?.stop();
 			}}
 			onLock={() => setLocked(true)}
 			onUnlock={() => setLocked(false)}
@@ -84,7 +90,13 @@ export function CarouselViewport({
 			spaceBetween={spaceBetween}
 			breakpoints={breakpoints}
 			loop={loop}
-			autoplay={autoplayDelay ? { delay: autoplayDelay, disableOnInteraction: false } : false}
+			// Pauses under the mouse and stops once the visitor touches it (e.g. to pick a size),
+			// so the slide never changes while they are choosing.
+			autoplay={
+				autoplayDelay
+					? { delay: autoplayDelay, disableOnInteraction: true, pauseOnMouseEnter: true }
+					: false
+			}
 			pagination={pagination ? { clickable: true } : false}
 			className={cn("w-full", className)}
 			aria-label={label}

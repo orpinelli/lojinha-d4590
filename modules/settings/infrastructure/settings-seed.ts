@@ -22,10 +22,6 @@ export function defaultSiteSettings(): SiteSettings {
 		hero: {
 			title: "ROTARACT",
 			highlight: "DISTRITO 4590",
-			subtitle:
-				"Uma coleção exclusiva que celebra a excelência e o compromisso com o serviço.",
-			primaryCta: "Ver produtos",
-			secondaryCta: "Falar no WhatsApp",
 		},
 		labels: {
 			shipping: "Entrega em eventos ou a combinar",

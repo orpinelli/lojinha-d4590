@@ -46,7 +46,6 @@
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(0.9 0 0);
   --sidebar-ring: var(--primary);
-  --swiper-theme-color: var(--primary);
 
   /* Design tokens (playful 3D style) shared by the store and the admin.
      Brand colors stay in the admin-managed theme; these are support colors. */
@@ -55,6 +54,12 @@
   --link: #1cb0f6;
   --stroke: #cfcfcf;
   --night: #100f3e;
+}
+
+/* Carousel dots in the store color. Swiper's stylesheet sets its own blue on
+   :root and loads after this file, so the color is set on the carousel itself. */
+.swiper {
+  --swiper-theme-color: var(--primary);
 }
 
 .dark {

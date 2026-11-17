@@ -18,13 +18,13 @@ export function FeaturedShowcase({
 	priority?: boolean;
 }) {
 	return (
-		<section className="px-4 pt-2 pb-8 sm:px-6 sm:pb-12 lg:px-10" aria-label={title}>
-			<div className="mx-auto w-full max-w-[1440px]">
+		<section className="px-4 pt-1 pb-6 sm:px-6 sm:pb-10 lg:px-10" aria-label={title}>
+			<div className="mx-auto w-full max-w-5xl">
 				{products.length === 1 ? (
 					<FeaturedProductCard product={products[0]} badge={title} priority={priority} />
 				) : (
 					<Carousel.Root>
-						<Carousel.Viewport loop autoplayDelay={4500} pagination className="pt-1 pb-10">
+						<Carousel.Viewport loop autoplayDelay={5000} pagination className="!pt-1 !pb-9">
 							{products.map((product, index) => (
 								<FeaturedProductCard
 									key={product.id}

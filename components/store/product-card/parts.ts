@@ -1,14 +1,12 @@
 import {
 	ProductCardAddButton,
 	ProductCardBody,
-	ProductCardDescription,
 	ProductCardDetailsLink,
 	ProductCardFeaturedBadge,
 	ProductCardFooter,
 	ProductCardMedia,
 	ProductCardPrice,
 	ProductCardRoot,
-	ProductCardShippingBadge,
 	ProductCardSizePicker,
 	ProductCardTitle,
 } from "./product-card";
@@ -23,11 +21,9 @@ export const ProductCard = {
 	Body: ProductCardBody,
 	Footer: ProductCardFooter,
 	Title: ProductCardTitle,
-	Description: ProductCardDescription,
 	Price: ProductCardPrice,
 	SizePicker: ProductCardSizePicker,
 	AddButton: ProductCardAddButton,
 	DetailsLink: ProductCardDetailsLink,
 	FeaturedBadge: ProductCardFeaturedBadge,
-	ShippingBadge: ProductCardShippingBadge,
 };

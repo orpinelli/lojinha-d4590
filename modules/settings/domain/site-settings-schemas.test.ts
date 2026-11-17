@@ -9,7 +9,15 @@ describe("site settings", () => {
 			defaultSiteSettings(),
 		);
 		expect(settings.hero.title).toBe("Nova loja");
-		expect(settings.hero.primaryCta).toBe("Ver produtos");
+		expect(settings.hero.highlight).toBe("DISTRITO 4590");
+	});
+
+	it("ignores fields that no longer exist (old hero subtitle and buttons)", () => {
+		const settings = normalizeSiteSettings(
+			{ hero: { title: "Loja", highlight: "D4590", subtitle: "Frase antiga", primaryCta: "Ver produtos" } },
+			defaultSiteSettings(),
+		);
+		expect(settings.hero).toEqual({ title: "Loja", highlight: "D4590" });
 	});
 
 	it("falls back to the defaults when a stored section is invalid", () => {
