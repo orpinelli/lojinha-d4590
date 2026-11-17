@@ -30,6 +30,6 @@ export function buildOrderMessage({
 		...lines,
 		"",
 		`Total: ${formatPrice(total)}`,
-		`Pagamento: ${PAYMENT_METHOD_LABELS[paymentMethod]}`,
+		`Forma de pagamento: ${PAYMENT_METHOD_LABELS[paymentMethod]}`,
 	].join("\n");
 }

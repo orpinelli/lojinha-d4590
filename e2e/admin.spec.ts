@@ -25,7 +25,7 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 	const code = (await page.getByText(/^#[0-9A-Z]{6}$/).textContent())?.slice(1) ?? "";
 	await expect.poll(() => opened.length).toBe(1);
 	expect(whatsappText(opened[0])).toContain(`Pedido #${code}`);
-	expect(whatsappText(opened[0])).toContain("Pagamento: Cartão de débito");
+	expect(whatsappText(opened[0])).toContain("Forma de pagamento: Cartão de débito");
 
 	// Admin: the order was recorded in the background
 	await loginAsAdmin(page.request);
@@ -100,8 +100,10 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 	// Delete (with confirmation)
 	await page.goto("/gerenciamento/pedidos");
 	await page.getByRole("listitem").filter({ hasText: `Pedido #${code}` }).getByRole("link", { name: "Ver" }).click();
-	await page.getByRole("button", { name: "Excluir" }).click();
-	await page.getByRole("alertdialog").getByRole("button", { name: "Excluir" }).click();
+	// Wait for the order page: the list also has "Excluir Pedido #…" buttons on every row.
+	await expect(page.getByRole("heading", { name: `Pedido #${code}` })).toBeVisible();
+	await page.getByRole("button", { name: "Excluir", exact: true }).click();
+	await page.getByRole("alertdialog").getByRole("button", { name: "Excluir", exact: true }).click();
 	await expect(page).toHaveURL(/\/gerenciamento\/pedidos$/);
 	await expect(page.getByRole("listitem").filter({ hasText: `Pedido #${code}` })).toHaveCount(0);
 	expect(await findOrder(page.request, code)).toBeUndefined();

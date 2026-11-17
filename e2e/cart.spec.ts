@@ -74,7 +74,7 @@ test("adiciona produtos, revisa no /carrinho e finaliza pelo WhatsApp", async ({
 	expect(message).toContain(`Pedido #${code}`);
 	expect(message).toContain("2x Camiseta rosa (Tamanho: M)");
 	expect(message).toContain("Total: R$ 120,00");
-	expect(message).toContain("Pagamento: Pix");
+	expect(message).toContain("Forma de pagamento: Pix");
 	await expect(page.getByRole("link", { name: "Ver carrinho", exact: true })).toBeVisible();
 
 	await page.reload();
@@ -125,7 +125,7 @@ test("a forma de pagamento é obrigatória: Pix, crédito ou débito", async ({ 
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
 	await expect(page.getByRole("heading", { name: "Pedido pronto!" })).toBeVisible();
 	await expect.poll(() => opened.length).toBe(1);
-	expect(whatsappText(opened[0])).toContain("Pagamento: Cartão de crédito");
+	expect(whatsappText(opened[0])).toContain("Forma de pagamento: Cartão de crédito");
 });
 
 test("nome, clube, distrito e celular são opcionais, mas o celular preenchido precisa ser válido", async ({ page }) => {

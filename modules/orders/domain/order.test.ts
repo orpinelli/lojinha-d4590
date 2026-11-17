@@ -123,7 +123,7 @@ describe("order message", () => {
 			],
 		});
 		expect(message.replace(/\s/g, " ")).toBe(
-			"Olá! Quero pedir:  Pedido #K7P2QX 2x Camiseta (Tamanho: BABY LOOK G) - R$ 60,00 1x Caneca - R$ 25,00  Total: R$ 145,00 Pagamento: Cartão de débito",
+			"Olá! Quero pedir:  Pedido #K7P2QX 2x Camiseta (Tamanho: BABY LOOK G) - R$ 60,00 1x Caneca - R$ 25,00  Total: R$ 145,00 Forma de pagamento: Cartão de débito",
 		);
 	});
 });
