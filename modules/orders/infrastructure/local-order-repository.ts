@@ -2,15 +2,25 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { ConflictError } from "@/modules/shared/domain/errors";
 import { createJsonFileStore } from "@/modules/shared/infrastructure/json-file-store";
-import { ORDER_PAYMENTS, type Order, type OrderRepository } from "../domain/order";
+import { isPaymentMethod, type Order, type OrderRepository } from "../domain/order";
 
-/** Orders saved before a field existed get its default. */
+/**
+ * Orders saved before a field existed get its default. Old files kept paid and
+ * method together in `payment` ("unpaid", "pix", "cash"…).
+ */
 function normalizeOrders(raw: unknown): Order[] {
 	if (!Array.isArray(raw)) return [];
-	return raw.map((order: Order) => ({
+	return raw.map(({ payment, ...order }: Order & { payment?: string }) => ({
 		...order,
-		payment: (ORDER_PAYMENTS as readonly string[]).includes(order.payment) ? order.payment : "unpaid",
+		paid: typeof order.paid === "boolean" ? order.paid : Boolean(payment && payment !== "unpaid"),
+		paymentMethod: isPaymentMethod(order.paymentMethod)
+			? order.paymentMethod
+			: isPaymentMethod(payment)
+				? payment
+				: "",
 		customerName: order.customerName ?? "",
+		customerClub: order.customerClub ?? "",
+		customerDistrict: order.customerDistrict ?? "",
 		customerPhone: order.customerPhone ?? "",
 	}));
 }
@@ -47,7 +57,7 @@ export function createLocalOrderRepository(filePath: string): OrderRepository {
 					...order,
 					id: randomUUID(),
 					status: "new",
-					payment: "unpaid",
+					paid: false,
 					notes: "",
 					createdAt: timestamp,
 					updatedAt: timestamp,

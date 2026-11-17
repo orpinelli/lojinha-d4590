@@ -5,10 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
 	ORDER_STATUS_LABELS,
-	isPaid,
 	paymentSummary,
+	type OrderDetails,
 	type OrderItem,
-	type OrderPayment,
 	type OrderStatus,
 } from "@/modules/orders/domain/order";
 import { formatWhatsapp } from "@/modules/shared/domain/phone";
@@ -29,9 +28,9 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 	return <Badge variant={STATUS_BADGE[status]}>{ORDER_STATUS_LABELS[status]}</Badge>;
 }
 
-/** "Pago · Pix" in green, "Não pago" in amber. */
-export function OrderPaymentBadge({ payment }: { payment: OrderPayment }) {
-	return <Badge variant={isPaid(payment) ? "success" : "warning"}>{paymentSummary(payment)}</Badge>;
+/** "Pago · Pix" in green, "Não pago · Pix" in amber (the method chosen in the cart). */
+export function OrderPaymentBadge({ paid, paymentMethod }: Pick<OrderDetails, "paid" | "paymentMethod">) {
+	return <Badge variant={paid ? "success" : "warning"}>{paymentSummary({ paid, paymentMethod })}</Badge>;
 }
 
 /** Who bought: name and phone (both optional, typed in the cart or in the admin). */

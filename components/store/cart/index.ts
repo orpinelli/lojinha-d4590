@@ -4,6 +4,7 @@ import {
 	CartHeader,
 	CartLines,
 	CartLoading,
+	CartPayment,
 	CartPlaced,
 	CartReview,
 	CartRoot,
@@ -20,6 +21,7 @@ import {
  *   <Cart.Review>
  *     <Cart.Lines />
  *     <Cart.Summary>
+ *       <Cart.Payment />
  *       <Cart.Customer />
  *     </Cart.Summary>
  *   </Cart.Review>
@@ -34,6 +36,7 @@ export const Cart = {
 	Review: CartReview,
 	Lines: CartLines,
 	Summary: CartSummary,
+	Payment: CartPayment,
 	Customer: CartCustomer,
 	Placed: CartPlaced,
 };

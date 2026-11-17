@@ -16,10 +16,14 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 		{ productId: "1", name: "Caneca 850mL", priceInCents: 2500, quantity: 1 },
 	]);
 	await page.goto("/carrinho");
+	await page.getByRole("radio", { name: "Cartão de débito" }).check();
+	await page.getByLabel("Clube", { exact: true }).fill("Rotaract Club Teste");
+	await page.getByLabel("Distrito", { exact: true }).fill("4590");
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
 	const code = (await page.getByText(/^#[0-9A-Z]{6}$/).textContent())?.slice(1) ?? "";
 	await expect.poll(() => opened.length).toBe(1);
 	expect(whatsappText(opened[0])).toContain(`Pedido #${code}`);
+	expect(whatsappText(opened[0])).toContain("Pagamento: Cartão de débito");
 
 	// Admin: the order was recorded in the background
 	await loginAsAdmin(page.request);
@@ -33,6 +37,7 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 	await expect(row).toContainText("Novo");
 	await expect(row).toContainText("3 itens");
 	await expect(row).toContainText("R$ 145,00");
+	await expect(row).toContainText("Não pago · Cartão de débito");
 
 	// Details
 	await row.getByRole("link", { name: `Pedido #${code}` }).click();
@@ -41,6 +46,8 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 	await expect(main).toContainText("Camiseta rosa");
 	await expect(main).toContainText("Tamanho M · 2 ×");
 	await expect(main).toContainText("R$ 145,00");
+	await expect(main).toContainText("Rotaract Club Teste");
+	await expect(main).toContainText("4590");
 
 	// Quick status change (saved right away)
 	const statusGroup = page.getByRole("group", { name: "Status do pedido" });
@@ -48,18 +55,27 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 	await expect(statusGroup.getByRole("button", { name: "Confirmado" })).toHaveAttribute("aria-pressed", "true");
 	await expect.poll(async () => (await findOrder(page.request, code))?.status).toBe("confirmed");
 
-	// Payment: choosing the method marks it as paid
-	await expect(page.getByText("Não pago", { exact: true }).first()).toBeVisible();
-	const paymentGroup = page.getByRole("group", { name: "Pagamento do pedido" });
-	await paymentGroup.getByRole("button", { name: "Pix" }).click();
-	await expect(paymentGroup.getByRole("button", { name: "Pix" })).toHaveAttribute("aria-pressed", "true");
+	// Payment: the method chosen in the cart shows up and can be changed; paid is separate
+	await expect(page.getByText("Não pago · Cartão de débito").first()).toBeVisible();
+	const methodGroup = page.getByRole("group", { name: "Forma de pagamento" });
+	await expect(methodGroup.getByRole("button")).toHaveText(["Pix", "Cartão de crédito", "Cartão de débito"]);
+	await expect(methodGroup.getByRole("button", { name: "Cartão de débito" })).toHaveAttribute("aria-pressed", "true");
+	await methodGroup.getByRole("button", { name: "Pix" }).click();
+	await expect(methodGroup.getByRole("button", { name: "Pix" })).toHaveAttribute("aria-pressed", "true");
+	await expect(page.getByText("Não pago · Pix").first()).toBeVisible();
+	const paidGroup = page.getByRole("group", { name: "Situação do pagamento" });
+	await paidGroup.getByRole("button", { name: "Pago", exact: true }).click();
+	await expect(paidGroup.getByRole("button", { name: "Pago", exact: true })).toHaveAttribute("aria-pressed", "true");
 	await expect(page.getByText("Pago · Pix").first()).toBeVisible();
 
 	// Edit: customer data and quantity; the total follows
 	await page.getByRole("link", { name: "Editar" }).click();
 	await expect(page.getByRole("heading", { name: `Editar pedido #${code}` })).toBeVisible();
-	await expect(page.getByRole("combobox", { name: "Pagamento" })).toHaveText("Pix");
+	await expect(page.getByRole("radio", { name: "Pix" })).toBeChecked();
+	await expect(page.getByRole("switch", { name: "Pago" })).toBeChecked();
+	await expect(page.getByLabel("Clube", { exact: true })).toHaveValue("Rotaract Club Teste");
 	await page.getByLabel("Nome", { exact: true }).fill("Maria Teste");
+	await page.getByLabel("Distrito", { exact: true }).fill("4591");
 	await page.getByLabel("WhatsApp", { exact: true }).fill("19999998888");
 	await page.getByLabel("Observações", { exact: true }).fill("Retira no evento de sábado.");
 	await page.getByLabel("Quantidade", { exact: true }).nth(1).fill("3");
@@ -68,6 +84,7 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 
 	await expect(page.getByRole("heading", { name: `Pedido #${code}` })).toBeVisible();
 	await expect(main).toContainText("Maria Teste");
+	await expect(main).toContainText("4591");
 	await expect(main).toContainText("+55 19 99999-8888");
 	await expect(main).toContainText("Retira no evento de sábado.");
 	await expect(main).toContainText("R$ 195,00");
@@ -90,7 +107,7 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 
 test("menu do painel leva aos pedidos", async ({ page }) => {
 	await page.request.post("/api/orders", {
-		data: { code: randomOrderCode(), items: [{ productId: "4", quantity: 1 }] },
+		data: { code: randomOrderCode(), paymentMethod: "pix", items: [{ productId: "4", quantity: 1 }] },
 		headers: { "x-real-ip": "10.20.0.1" },
 	});
 	await loginAsAdmin(page.request);
@@ -101,10 +118,11 @@ test("menu do painel leva aos pedidos", async ({ page }) => {
 	await expect(page.getByRole("navigation", { name: "Filtrar pedidos por status" })).toContainText("Todos");
 });
 
-test("nome e celular informados no carrinho aparecem no painel", async ({ page }) => {
+test("forma de pagamento, nome e celular informados no carrinho aparecem no painel", async ({ page }) => {
 	await captureWhatsapp(page);
 	await seedCart(page, [{ productId: "9", name: "Caneca + Tirante + Pin", priceInCents: 4200, quantity: 5 }]);
 	await page.goto("/carrinho");
+	await page.getByRole("radio", { name: "Pix" }).check();
 	await page.getByLabel("Nome", { exact: true }).fill("Gabriel Teste");
 	await page.getByLabel("Celular (WhatsApp)").fill("19 98888-7777");
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
@@ -117,7 +135,7 @@ test("nome e celular informados no carrinho aparecem no painel", async ({ page }
 	await expect(row).toContainText("Gabriel Teste");
 	await expect(row).toContainText("+55 19 98888-7777");
 	await expect(row).toContainText("5 itens");
-	await expect(row).toContainText("Não pago");
+	await expect(row).toContainText("Não pago · Pix");
 });
 
 test("vendas do ano: quantidade e valor de cada produto, sem os cancelados", async ({ page }) => {
@@ -125,7 +143,7 @@ test("vendas do ano: quantidade e valor de cada produto, sem os cancelados", asy
 	const place = async (quantity: number) => {
 		const code = randomOrderCode();
 		const response = await page.request.post("/api/orders", {
-			data: { code, items: [{ productId: "5", quantity }] },
+			data: { code, paymentMethod: "pix", items: [{ productId: "5", quantity }] },
 			headers: { "x-real-ip": "10.60.0.1" },
 		});
 		expect(response.status()).toBe(201);
@@ -136,7 +154,7 @@ test("vendas do ano: quantidade e valor de cada produto, sem os cancelados", asy
 	const paid = await place(3);
 	await place(2);
 	const canceled = await place(4);
-	await page.request.patch(`/api/orders/${paid.id}`, { data: { payment: "pix" } });
+	await page.request.patch(`/api/orders/${paid.id}`, { data: { paid: true } });
 	await page.request.patch(`/api/orders/${canceled.id}`, { data: { status: "canceled" } });
 
 	await page.goto("/gerenciamento");
@@ -169,7 +187,7 @@ test("busca de pedidos por nome, número e celular enquanto digita", async ({ pa
 	const place = async (customerName: string, customerPhone: string) => {
 		const code = randomOrderCode();
 		const response = await page.request.post("/api/orders", {
-			data: { code, customerName, customerPhone, items: [{ productId: "4", quantity: 1 }] },
+			data: { code, paymentMethod: "pix", customerName, customerPhone, items: [{ productId: "4", quantity: 1 }] },
 			headers: { "x-real-ip": "10.80.0.1" },
 		});
 		expect(response.status()).toBe(201);

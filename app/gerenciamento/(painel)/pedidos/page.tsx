@@ -153,7 +153,7 @@ export default async function OrdersPage({ searchParams }: Props) {
 									<OrderCustomer name={order.customerName} phone={order.customerPhone} />
 									<ResourceList.Meta>
 										<OrderStatusBadge status={order.status} />
-										<OrderPaymentBadge payment={order.payment} />
+										<OrderPaymentBadge paid={order.paid} paymentMethod={order.paymentMethod} />
 										<span>{formatDateTime(order.createdAt)}</span>
 										<span>
 											{units} {units === 1 ? "item" : "itens"}

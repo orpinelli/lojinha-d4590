@@ -19,7 +19,7 @@ export function CatalogProductCard({ product }: { product: StoreProduct }) {
 	);
 }
 
-/** Highlight card: same parts, editorial layout; `badge` is the showcase title. */
+/** Highlight card: same parts, editorial layout (title, no description); `badge` is the showcase title. */
 export function FeaturedProductCard({
 	product,
 	badge,
@@ -44,7 +44,6 @@ export function FeaturedProductCard({
 						linked={false}
 						className="font-display text-3xl leading-tight font-semibold md:text-4xl"
 					/>
-					<ProductCard.Description className="text-base leading-relaxed md:text-[17px]" />
 					<div className="flex flex-wrap items-center gap-3">
 						<ProductCard.Price className="text-4xl font-semibold text-primary" />
 						<ProductCard.ShippingBadge />

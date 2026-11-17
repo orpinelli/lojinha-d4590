@@ -28,7 +28,7 @@ export function defaultSiteSettings(): SiteSettings {
 			secondaryCta: "Falar no WhatsApp",
 		},
 		labels: {
-			shipping: "Frete Grátis",
+			shipping: "Entrega em eventos ou a combinar",
 		},
 		contact: {
 			whatsappNumber: "5519991801697",

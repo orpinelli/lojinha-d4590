@@ -40,6 +40,9 @@ export function isAvailable(product: Pick<Product, "active" | "stock" | "trackSt
 
 export const DEFAULT_SIZES = ["PP", "P", "M", "G", "GG", "XG"] as const;
 
+/** Room for longer sizes such as "BABY LOOK G". */
+export const MAX_SIZE_LENGTH = 20;
+
 export function productCover(product: Pick<Product, "images">): string {
 	return product.images[0] ?? "";
 }

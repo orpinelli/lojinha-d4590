@@ -4,7 +4,11 @@ import { MessageCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/admin/actions";
 import { FormSection, PageHeader } from "@/components/admin/blocks";
-import { OrderPaymentControl, OrderStatusControl } from "@/components/admin/order-quick-controls";
+import {
+	OrderPaidControl,
+	OrderPaymentMethodControl,
+	OrderStatusControl,
+} from "@/components/admin/order-quick-controls";
 import {
 	ORDERS_PATH,
 	OrderItemsList,
@@ -24,23 +28,31 @@ import { whatsappChatUrl } from "@/modules/shared/domain/whatsapp";
 
 type Props = { params: Promise<{ id: string }> };
 
+function InfoText({ label, value }: { label: string; value: string }) {
+	if (!value) return null;
+	return (
+		<div className="space-y-1">
+			<dt className="text-[11px] font-extrabold tracking-[1.5px] text-label uppercase">{label}</dt>
+			<dd className="font-bold break-words text-foreground">{value}</dd>
+		</div>
+	);
+}
+
 function CustomerInfo({ order }: { order: Order }) {
-	if (!order.customerName && !order.customerPhone && !order.notes) {
+	const { customerName, customerClub, customerDistrict, customerPhone, notes } = order;
+	if (!customerName && !customerClub && !customerDistrict && !customerPhone && !notes) {
 		return (
 			<p className="text-sm text-muted-foreground">
 				Sem dados do cliente. Em <strong className="text-foreground">Editar</strong> você anota nome,
-				WhatsApp e observações.
+				clube, distrito, WhatsApp e observações.
 			</p>
 		);
 	}
 	return (
 		<dl className="space-y-4 text-sm">
-			{order.customerName && (
-				<div className="space-y-1">
-					<dt className="text-[11px] font-extrabold tracking-[1.5px] text-label uppercase">Nome</dt>
-					<dd className="font-bold break-words text-foreground">{order.customerName}</dd>
-				</div>
-			)}
+			<InfoText label="Nome" value={customerName} />
+			<InfoText label="Clube" value={customerClub} />
+			<InfoText label="Distrito" value={customerDistrict} />
 			{order.customerPhone && (
 				<div className="space-y-2">
 					<dt className="text-[11px] font-extrabold tracking-[1.5px] text-label uppercase">WhatsApp</dt>
@@ -88,7 +100,7 @@ export default async function OrderPage({ params }: Props) {
 					<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
 						<PageHeader.Title>Pedido #{order.code}</PageHeader.Title>
 						<OrderStatusBadge status={order.status} />
-						<OrderPaymentBadge payment={order.payment} />
+						<OrderPaymentBadge paid={order.paid} paymentMethod={order.paymentMethod} />
 					</div>
 					<PageHeader.Description>
 						Feito em {formatDateTime(order.createdAt)}
@@ -129,9 +141,17 @@ export default async function OrderPage({ params }: Props) {
 						</FormSection.Content>
 					</FormSection.Root>
 					<FormSection.Root>
-						<FormSection.Header title="Pagamento" description="Escolha o meio usado para marcar como pago." />
-						<FormSection.Content>
-							<OrderPaymentControl orderId={order.id} payment={order.payment} />
+						<FormSection.Header
+							title="Pagamento"
+							description={
+								order.paymentMethod
+									? "A forma foi escolhida pelo cliente no carrinho. Toque para mudar. Salva na hora."
+									: "O cliente não informou a forma. Toque para escolher. Salva na hora."
+							}
+						/>
+						<FormSection.Content className="gap-3">
+							<OrderPaidControl orderId={order.id} paid={order.paid} />
+							<OrderPaymentMethodControl orderId={order.id} paymentMethod={order.paymentMethod} />
 						</FormSection.Content>
 					</FormSection.Root>
 					<FormSection.Root>

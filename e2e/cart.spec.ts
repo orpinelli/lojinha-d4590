@@ -33,8 +33,10 @@ test("adiciona produtos, revisa no /carrinho e finaliza pelo WhatsApp", async ({
 	await expect(summary).toContainText("R$ 120,00");
 
 	// Confirm: WhatsApp opens with the order written and the cart is emptied
+	await summary.getByRole("radio", { name: "Pix" }).check();
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
 	await expect(page.getByRole("heading", { name: "Pedido pronto!" })).toBeVisible();
+	await expect(page.locator("main")).toContainText("Pagamento");
 	const code = (await page.getByText(/^#[0-9A-Z]{6}$/).textContent())?.slice(1);
 	expect(code).toMatch(/^[0-9A-Z]{6}$/);
 	await expect.poll(() => opened.length).toBe(1);
@@ -42,6 +44,7 @@ test("adiciona produtos, revisa no /carrinho e finaliza pelo WhatsApp", async ({
 	expect(message).toContain(`Pedido #${code}`);
 	expect(message).toContain("2x Camiseta rosa (Tamanho: M)");
 	expect(message).toContain("Total: R$ 120,00");
+	expect(message).toContain("Pagamento: Pix");
 	await expect(page.getByRole("link", { name: "Ver carrinho", exact: true })).toBeVisible();
 
 	await page.reload();
@@ -63,10 +66,39 @@ test("o ícone do carrinho mostra a quantidade e abre a página", async ({ page 
 	await expect(page.getByRole("list", { name: "Itens do carrinho" })).toContainText("Pin");
 });
 
-test("nome e celular são opcionais, mas o celular preenchido precisa ser válido", async ({ page }) => {
+test("a forma de pagamento é obrigatória: Pix, crédito ou débito", async ({ page }) => {
 	const opened = await captureWhatsapp(page);
 	await seedCart(page, [{ productId: "4", name: "Pin", priceInCents: 1500, quantity: 1 }]);
 	await page.goto("/carrinho");
+	const methods = page.getByRole("radiogroup", { name: "Forma de pagamento" }).getByRole("radio");
+	await expect(methods).toHaveCount(3);
+	await expect(methods.nth(0)).toHaveAccessibleName("Pix");
+	await expect(methods.nth(1)).toHaveAccessibleName("Cartão de crédito");
+	await expect(methods.nth(2)).toHaveAccessibleName("Cartão de débito");
+
+	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
+	await expect(page.getByText("Escolha a forma de pagamento.")).toBeVisible();
+	await expect(page.getByRole("radio", { name: "Pix" })).toBeFocused();
+	expect(opened).toHaveLength(0);
+
+	await page.getByRole("radio", { name: "Cartão de crédito" }).check();
+	await expect(page.getByText("Escolha a forma de pagamento.")).toHaveCount(0);
+	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
+	await expect(page.getByRole("heading", { name: "Pedido pronto!" })).toBeVisible();
+	await expect.poll(() => opened.length).toBe(1);
+	expect(whatsappText(opened[0])).toContain("Pagamento: Cartão de crédito");
+});
+
+test("nome, clube, distrito e celular são opcionais, mas o celular preenchido precisa ser válido", async ({ page }) => {
+	const opened = await captureWhatsapp(page);
+	await seedCart(page, [{ productId: "4", name: "Pin", priceInCents: 1500, quantity: 1 }]);
+	await page.goto("/carrinho");
+	await page.getByRole("radio", { name: "Cartão de débito" }).check();
+	// Under the name: club, then district
+	const fields = page.getByRole("group", { name: /Seus dados/ }).getByRole("textbox");
+	await expect(fields.nth(0)).toHaveAccessibleName("Nome");
+	await expect(fields.nth(1)).toHaveAccessibleName("Clube");
+	await expect(fields.nth(2)).toHaveAccessibleName("Distrito");
 	const phone = page.getByLabel("Celular (WhatsApp)");
 	await phone.fill("1999");
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();

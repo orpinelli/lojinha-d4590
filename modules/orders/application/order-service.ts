@@ -38,8 +38,8 @@ export function createOrderService({ orders, products }: Dependencies) {
 	return {
 		/**
 		 * Records the order the visitor is sending by WhatsApp. Names and prices
-		 * come from the catalog; name and phone are optional. The same code twice
-		 * (double tap) is ignored.
+		 * come from the catalog; the payment method is required, the customer
+		 * details are optional. The same code twice (double tap) is ignored.
 		 */
 		async place(rawInput: unknown): Promise<{ code: string }> {
 			const input = parseInput(checkoutInputSchema, rawInput);
@@ -66,7 +66,10 @@ export function createOrderService({ orders, products }: Dependencies) {
 					code: input.code,
 					items,
 					totalInCents: orderTotal(items),
+					paymentMethod: input.paymentMethod,
 					customerName: input.customerName,
+					customerClub: input.customerClub,
+					customerDistrict: input.customerDistrict,
 					customerPhone: input.customerPhone,
 				});
 			} catch (error) {
@@ -116,7 +119,7 @@ export function createOrderService({ orders, products }: Dependencies) {
 			return updated;
 		},
 
-		/** Quick change of status and/or payment. */
+		/** Quick change of status, paid and/or payment method. */
 		async patch(id: string, rawInput: unknown): Promise<Order> {
 			const changes = parseInput(orderPatchSchema, rawInput);
 			const updated = await orders.patch(id, changes);

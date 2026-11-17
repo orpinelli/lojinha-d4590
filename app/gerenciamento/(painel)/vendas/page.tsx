@@ -6,7 +6,7 @@ import { SectionLabel } from "@/components/ui/section-label";
 import { getRequestServices } from "@/lib/server/container";
 import { requireAdminSession } from "@/lib/server/session";
 import { productCover } from "@/modules/catalog/domain/product";
-import { ORDER_PAYMENT_LABELS } from "@/modules/orders/domain/order";
+import { paymentMethodLabel } from "@/modules/orders/domain/order";
 import {
 	salesYearLabel,
 	salesYearRange,
@@ -183,9 +183,9 @@ export default async function SalesPage({ searchParams }: Props) {
 							<SectionLabel className="mt-10 mb-4">Recebido por meio de pagamento</SectionLabel>
 							<ResourceList.Root aria-label="Recebido por meio de pagamento">
 								{report.byPayment.map((entry) => (
-									<ResourceList.Item key={entry.payment} className="flex-nowrap">
+									<ResourceList.Item key={entry.method || "none"} className="flex-nowrap">
 										<ResourceList.Content>
-											<ResourceList.Title>{ORDER_PAYMENT_LABELS[entry.payment]}</ResourceList.Title>
+											<ResourceList.Title>{paymentMethodLabel(entry.method)}</ResourceList.Title>
 											<ResourceList.Meta>{plural(entry.orders, "pedido", "pedidos")}</ResourceList.Meta>
 										</ResourceList.Content>
 										<Price cents={entry.totalInCents} className="shrink-0 font-display text-xl font-semibold" />

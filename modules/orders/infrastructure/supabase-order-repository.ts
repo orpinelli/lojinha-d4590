@@ -2,11 +2,11 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toDomainError } from "@/modules/shared/infrastructure/supabase-errors";
 import {
-	ORDER_PAYMENTS,
 	ORDER_STATUSES,
+	isPaymentMethod,
 	type Order,
 	type OrderItem,
-	type OrderPayment,
+	type OrderPatch,
 	type OrderRepository,
 	type OrderStatus,
 } from "../domain/order";
@@ -15,10 +15,13 @@ type OrderRow = {
 	id: string;
 	code: string;
 	status: string;
-	payment: string;
+	paid: boolean;
+	payment_method: string;
 	items: unknown;
 	total_in_cents: number;
 	customer_name: string;
+	customer_club: string;
+	customer_district: string;
 	customer_phone: string;
 	notes: string;
 	created_at: string;
@@ -26,7 +29,7 @@ type OrderRow = {
 };
 
 const COLUMNS =
-	"id, code, status, payment, items, total_in_cents, customer_name, customer_phone, notes, created_at, updated_at";
+	"id, code, status, paid, payment_method, items, total_in_cents, customer_name, customer_club, customer_district, customer_phone, notes, created_at, updated_at";
 
 /** `items` is JSON in the database: read it defensively. */
 function toItems(raw: unknown): OrderItem[] {
@@ -49,21 +52,28 @@ function toItems(raw: unknown): OrderItem[] {
 const toStatus = (value: string): OrderStatus =>
 	(ORDER_STATUSES as readonly string[]).includes(value) ? (value as OrderStatus) : "new";
 
-const toPayment = (value: string): OrderPayment =>
-	(ORDER_PAYMENTS as readonly string[]).includes(value) ? (value as OrderPayment) : "unpaid";
-
 const toOrder = (row: OrderRow): Order => ({
 	id: row.id,
 	code: row.code,
 	status: toStatus(row.status),
-	payment: toPayment(row.payment),
+	paid: row.paid === true,
+	paymentMethod: isPaymentMethod(row.payment_method) ? row.payment_method : "",
 	items: toItems(row.items),
 	totalInCents: row.total_in_cents,
 	customerName: row.customer_name,
+	customerClub: row.customer_club,
+	customerDistrict: row.customer_district,
 	customerPhone: row.customer_phone,
 	notes: row.notes,
 	createdAt: row.created_at,
 	updatedAt: row.updated_at,
+});
+
+/** Only the fields that were sent, with the column names. */
+const toPatchRow = ({ status, paid, paymentMethod }: OrderPatch) => ({
+	...(status !== undefined && { status }),
+	...(paid !== undefined && { paid }),
+	...(paymentMethod !== undefined && { payment_method: paymentMethod }),
 });
 
 type Result<T> = { data: T | null; error: { code?: string; message: string } | null };
@@ -75,8 +85,8 @@ function unwrap<T>({ data, error }: Result<T>): T | null {
 
 /**
  * `public.orders`. Visitors (anon) may only insert a new order (code, items,
- * total, and the optional name and phone); reading and changing orders is
- * admin-only (RLS + grants).
+ * total, payment method and the optional customer details); reading and
+ * changing orders is admin-only (RLS + grants).
  */
 export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepository {
 	const table = () => client.from("orders");
@@ -100,7 +110,10 @@ export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepo
 					items: order.items,
 					total_in_cents: order.totalInCents,
 					// Only sent when filled: an order without them never depends on these columns.
+					...(order.paymentMethod && { payment_method: order.paymentMethod }),
 					...(order.customerName && { customer_name: order.customerName }),
+					...(order.customerClub && { customer_club: order.customerClub }),
+					...(order.customerDistrict && { customer_district: order.customerDistrict }),
 					...(order.customerPhone && { customer_phone: order.customerPhone }),
 				}),
 			);
@@ -110,8 +123,11 @@ export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepo
 				await table()
 					.update({
 						status: details.status,
-						payment: details.payment,
+						paid: details.paid,
+						payment_method: details.paymentMethod,
 						customer_name: details.customerName,
+						customer_club: details.customerClub,
+						customer_district: details.customerDistrict,
 						customer_phone: details.customerPhone,
 						notes: details.notes,
 						items: details.items,
@@ -125,7 +141,7 @@ export function createSupabaseOrderRepository(client: SupabaseClient): OrderRepo
 		},
 		async patch(id, changes) {
 			const row = unwrap<OrderRow>(
-				await table().update(changes).eq("id", id).select(COLUMNS).maybeSingle(),
+				await table().update(toPatchRow(changes)).eq("id", id).select(COLUMNS).maybeSingle(),
 			);
 			return row ? toOrder(row) : null;
 		},

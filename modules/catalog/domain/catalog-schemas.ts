@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { assetUrlSchema } from "@/modules/shared/domain/validation";
+import { MAX_SIZE_LENGTH } from "./product";
 
 export const MAX_PRODUCT_IMAGES = 12;
 export const MAX_PRICE_IN_CENTS = 10_000_000;
@@ -45,7 +46,13 @@ export const productInputSchema = z.object({
 		.min(1, "Adicione pelo menos uma imagem.")
 		.max(MAX_PRODUCT_IMAGES, `Use no máximo ${MAX_PRODUCT_IMAGES} imagens.`),
 	sizes: z
-		.array(z.string().trim().min(1).max(10, "Tamanho muito longo."))
+		.array(
+			z
+				.string()
+				.trim()
+				.min(1)
+				.max(MAX_SIZE_LENGTH, `Use no máximo ${MAX_SIZE_LENGTH} caracteres em cada tamanho.`),
+		)
 		.max(20, "Use no máximo 20 tamanhos.")
 		.refine((sizes) => new Set(sizes).size === sizes.length, "Há tamanhos repetidos."),
 	details: productDetailsSchema,

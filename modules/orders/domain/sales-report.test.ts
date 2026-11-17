@@ -15,8 +15,11 @@ function order(createdAt: string, items: OrderItem[], extra: Partial<Order> = {}
 		id: `o${sequence}`,
 		code: `C${sequence}`,
 		status: "new",
-		payment: "unpaid",
+		paid: false,
+		paymentMethod: "",
 		customerName: "",
+		customerClub: "",
+		customerDistrict: "",
 		customerPhone: "",
 		notes: "",
 		items,
@@ -66,10 +69,11 @@ describe("store year (July → June)", () => {
 describe("sales report", () => {
 	// newest first, as the repository returns them
 	const orders = [
-		order("2027-03-10T15:00:00Z", [shirt("G", 1), pin(2, "Pin Thor")], { payment: "pix" }),
-		order("2026-10-01T15:00:00Z", [shirt("M", 2), shirt("P", 1)], { payment: "cash" }),
-		order("2026-09-01T15:00:00Z", [pin(3)]),
-		order("2026-08-01T15:00:00Z", [shirt("M", 5)], { status: "canceled", payment: "pix" }),
+		order("2027-03-10T15:00:00Z", [shirt("G", 1), pin(2, "Pin Thor")], { paid: true, paymentMethod: "pix" }),
+		// paid before the cart asked for the method
+		order("2026-10-01T15:00:00Z", [shirt("M", 2), shirt("P", 1)], { paid: true }),
+		order("2026-09-01T15:00:00Z", [pin(3)], { paymentMethod: "credit_card" }), // chosen, not paid yet
+		order("2026-08-01T15:00:00Z", [shirt("M", 5)], { status: "canceled", paid: true, paymentMethod: "pix" }),
 		order("2026-06-20T15:00:00Z", [pin(1)]), // still 2025-26
 	];
 	const report = buildSalesReport(orders, { kind: "year", start: 2026 });
@@ -88,8 +92,8 @@ describe("sales report", () => {
 		expect(report.paidInCents).toBe(6000 + 3000 + 3 * 6000);
 		expect(report.unpaidInCents).toBe(4500);
 		expect(report.byPayment).toEqual([
-			{ payment: "cash", orders: 1, totalInCents: 18000 },
-			{ payment: "pix", orders: 1, totalInCents: 9000 },
+			{ method: "", orders: 1, totalInCents: 18000 },
+			{ method: "pix", orders: 1, totalInCents: 9000 },
 		]);
 	});
 

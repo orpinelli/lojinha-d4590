@@ -1,23 +1,31 @@
 import { z } from "zod";
+import { MAX_SIZE_LENGTH } from "@/modules/catalog/domain/product";
 import { optionalPhoneSchema } from "@/modules/shared/domain/validation";
-import { ORDER_PAYMENTS, ORDER_STATUSES, isOrderCode } from "./order";
+import { ORDER_STATUSES, PAYMENT_METHODS, isOrderCode } from "./order";
 
 const customerNameSchema = z.string().trim().max(120, "Use no máximo 120 caracteres.");
+const customerClubSchema = z.string().trim().max(120, "Use no máximo 120 caracteres.");
+const customerDistrictSchema = z.string().trim().max(60, "Use no máximo 60 caracteres.");
+const sizeSchema = z.string().trim().max(MAX_SIZE_LENGTH, `Use no máximo ${MAX_SIZE_LENGTH} caracteres.`);
+const paymentMethodSchema = z.enum(PAYMENT_METHODS, { error: "Escolha a forma de pagamento." });
 
 /**
  * Public: what the cart sends when the visitor finishes. Only ids, sizes and
  * quantities — names and prices always come from the catalog on the server.
- * Name and phone are optional.
+ * The payment method is required; name, club, district and phone are optional.
  */
 export const checkoutInputSchema = z.object({
 	code: z.string().refine(isOrderCode, "Código do pedido inválido."),
+	paymentMethod: paymentMethodSchema,
 	customerName: customerNameSchema.default(""),
+	customerClub: customerClubSchema.default(""),
+	customerDistrict: customerDistrictSchema.default(""),
 	customerPhone: optionalPhoneSchema.default(""),
 	items: z
 		.array(
 			z.object({
 				productId: z.string().trim().min(1).max(100),
-				size: z.string().trim().max(20).default(""),
+				size: sizeSchema.default(""),
 				quantity: z.number().int().min(1).max(99),
 			}),
 		)
@@ -32,7 +40,7 @@ export const orderItemSchema = z.object({
 		.trim()
 		.min(1, "Informe o nome do produto.")
 		.max(120, "Use no máximo 120 caracteres."),
-	size: z.string().trim().max(20, "Use no máximo 20 caracteres."),
+	size: sizeSchema,
 	quantity: z
 		.number({ error: "Informe a quantidade." })
 		.int("Use um número inteiro.")
@@ -46,13 +54,17 @@ export const orderItemSchema = z.object({
 });
 
 const statusSchema = z.enum(ORDER_STATUSES, { error: "Escolha o status." });
-const paymentSchema = z.enum(ORDER_PAYMENTS, { error: "Escolha o pagamento." });
+const paidSchema = z.boolean({ error: "Informe se o pedido foi pago." });
 
 /** Admin edit: everything except the code and the dates. The total is recalculated. */
 export const orderDetailsSchema = z.object({
 	status: statusSchema,
-	payment: paymentSchema,
+	paid: paidSchema,
+	/** "" keeps "not informed" on orders made before the cart asked for it. */
+	paymentMethod: paymentMethodSchema.or(z.literal("")),
 	customerName: customerNameSchema,
+	customerClub: customerClubSchema,
+	customerDistrict: customerDistrictSchema,
 	customerPhone: optionalPhoneSchema,
 	notes: z.string().trim().max(1000, "Use no máximo 1000 caracteres."),
 	items: z
@@ -61,10 +73,14 @@ export const orderDetailsSchema = z.object({
 		.max(100, "Itens demais."),
 });
 
-/** Quick change from the order page: `{ status }`, `{ payment }` or both. */
+/** Quick change from the order page: any of `{ status, paid, paymentMethod }`, never none. */
 export const orderPatchSchema = z
-	.object({ status: statusSchema.optional(), payment: paymentSchema.optional() })
-	.refine((patch) => patch.status !== undefined || patch.payment !== undefined, "Nada para alterar.");
+	.object({
+		status: statusSchema.optional(),
+		paid: paidSchema.optional(),
+		paymentMethod: paymentMethodSchema.optional(),
+	})
+	.refine((patch) => Object.values(patch).some((value) => value !== undefined), "Nada para alterar.");
 
 export type CheckoutInput = z.input<typeof checkoutInputSchema>;
 export type OrderDetailsInput = z.input<typeof orderDetailsSchema>;

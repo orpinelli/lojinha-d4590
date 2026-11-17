@@ -5,15 +5,16 @@ import { Loader2 } from "lucide-react";
 import { ToggleChip } from "@/components/admin/form-fields/collection-fields";
 import { useAdminMutation } from "@/hooks/use-admin-mutation";
 import { adminApi } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 import {
-	ORDER_PAYMENTS,
-	ORDER_PAYMENT_LABELS,
 	ORDER_STATUSES,
 	ORDER_STATUS_LABELS,
-	isPaid,
+	PAYMENT_METHODS,
+	PAYMENT_METHOD_LABELS,
 	type OrderPatch,
-	type OrderPayment,
+	type OrderPaymentMethod,
 	type OrderStatus,
+	type PaymentMethod,
 } from "@/modules/orders/domain/order";
 
 /** Chips where one tap saves right away. */
@@ -23,12 +24,15 @@ function QuickChoice<V extends string>({
 	options,
 	labels,
 	onChoose,
+	className,
 }: {
 	label: string;
-	value: V;
+	/** null = none chosen yet. */
+	value: V | null;
 	options: readonly V[];
 	labels: Record<V, string>;
 	onChoose: (next: V) => Promise<unknown>;
+	className?: string;
 }) {
 	const [pending, setPending] = useState<V | null>(null);
 
@@ -40,7 +44,7 @@ function QuickChoice<V extends string>({
 	};
 
 	return (
-		<div role="group" aria-label={label} className="grid grid-cols-2 gap-2 pb-1">
+		<div role="group" aria-label={label} className={cn("grid grid-cols-2 gap-2 pb-1", className)}>
 			{options.map((option) => (
 				<ToggleChip
 					key={option}
@@ -76,23 +80,45 @@ export function OrderStatusControl({ orderId, status }: { orderId: string; statu
 	);
 }
 
-/** "Não pago" or the method used: choosing a method marks the order as paid. */
-export function OrderPaymentControl({ orderId, payment }: { orderId: string; payment: OrderPayment }) {
+const PAID_OPTIONS = ["unpaid", "paid"] as const;
+const PAID_LABELS: Record<(typeof PAID_OPTIONS)[number], string> = { unpaid: "Não pago", paid: "Pago" };
+
+/** Paid or not (marked when the money arrives). */
+export function OrderPaidControl({ orderId, paid }: { orderId: string; paid: boolean }) {
 	const patch = useOrderPatch(orderId);
 	return (
 		<QuickChoice
-			label="Pagamento do pedido"
-			value={payment}
-			options={ORDER_PAYMENTS}
-			labels={ORDER_PAYMENT_LABELS}
+			label="Situação do pagamento"
+			value={paid ? "paid" : "unpaid"}
+			options={PAID_OPTIONS}
+			labels={PAID_LABELS}
 			onChoose={(next) =>
 				patch(
-					{ payment: next },
-					isPaid(next)
-						? `Pagamento registrado: ${ORDER_PAYMENT_LABELS[next]}.`
-						: "Pedido marcado como não pago.",
+					{ paid: next === "paid" },
+					next === "paid" ? "Pedido marcado como pago." : "Pedido marcado como não pago.",
 				)
 			}
+		/>
+	);
+}
+
+/** Pix, credit or debit card: chosen by the customer in the cart, changeable here. */
+export function OrderPaymentMethodControl({
+	orderId,
+	paymentMethod,
+}: {
+	orderId: string;
+	paymentMethod: OrderPaymentMethod;
+}) {
+	const patch = useOrderPatch(orderId);
+	return (
+		<QuickChoice<PaymentMethod>
+			label="Forma de pagamento"
+			value={paymentMethod || null}
+			options={PAYMENT_METHODS}
+			labels={PAYMENT_METHOD_LABELS}
+			onChoose={(next) => patch({ paymentMethod: next }, `Forma de pagamento: ${PAYMENT_METHOD_LABELS[next]}.`)}
+			className="grid-cols-1"
 		/>
 	);
 }

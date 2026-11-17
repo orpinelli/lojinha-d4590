@@ -7,6 +7,7 @@ import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { RadioCard } from "@/components/ui/radio-card";
 import {
 	Select,
 	SelectContent,
@@ -297,32 +298,25 @@ export function ChoiceField({
 						)}
 					>
 						{options.map((option) => (
-							<label
+							<RadioCard
 								key={option.value}
-								className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-b-4 bg-background p-3 transition-[background-color,border-color,transform] hover:bg-muted active:translate-y-0.5 active:border-b-2 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-link/40"
+								name={field.name}
+								value={option.value}
+								checked={field.value === option.value}
+								onChange={() => {
+									field.onChange(option.value);
+									onValueChange?.(option.value);
+								}}
+								onBlur={field.onBlur}
 							>
-								<input
-									type="radio"
-									name={field.name}
-									value={option.value}
-									checked={field.value === option.value}
-									onChange={() => {
-										field.onChange(option.value);
-										onValueChange?.(option.value);
-									}}
-									onBlur={field.onBlur}
-									className="mt-0.5 size-4 shrink-0 accent-primary"
-								/>
-								<span className="min-w-0">
-									<span className="flex items-center gap-2 text-sm font-extrabold text-foreground [&_svg]:size-4 [&_svg]:text-primary">
-										{option.icon}
-										{option.label}
-									</span>
-									{option.description && (
-										<span className="mt-1 block text-sm text-muted-foreground">{option.description}</span>
-									)}
+								<span className="flex items-center gap-2 text-sm font-extrabold text-foreground [&_svg]:size-4 [&_svg]:text-primary">
+									{option.icon}
+									{option.label}
 								</span>
-							</label>
+								{option.description && (
+									<span className="mt-1 block text-sm text-muted-foreground">{option.description}</span>
+								)}
+							</RadioCard>
 						))}
 					</div>
 				</FieldFrame>

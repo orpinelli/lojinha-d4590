@@ -85,7 +85,7 @@ export default async function DashboardPage() {
 				<ShortcutCard href="/gerenciamento/produtos" icon={<Package />} title="Produtos" description="Preços, fotos, tamanhos e descrições." />
 				<ShortcutCard href="/gerenciamento/categorias" icon={<Tags />} title="Categorias" description="Organize os produtos por tipo." />
 				<ShortcutCard href="/gerenciamento/aparencia" icon={<Palette />} title="Aparência" description="Logo, nome e cores da loja." />
-				<ShortcutCard href="/gerenciamento/conteudo" icon={<FileText />} title="Textos e contato" description="Topo, selo de frete, WhatsApp, Instagram e rodapé." />
+				<ShortcutCard href="/gerenciamento/conteudo" icon={<FileText />} title="Textos e contato" description="Topo, selo de entrega, WhatsApp, Instagram e rodapé." />
 			</div>
 
 			{/* Only a development warning: in production nothing is shown here. */}

@@ -35,7 +35,7 @@ function setup() {
 		async create(order) {
 			if (stored.some((existing) => existing.code === order.code)) throw new ConflictError("código repetido");
 			const createdAt = new Date(Date.UTC(2026, 10, 16, 12, clock++)).toISOString();
-			stored.push({ ...order, id: `o${stored.length + 1}`, status: "new", payment: "unpaid", notes: "", createdAt, updatedAt: createdAt });
+			stored.push({ ...order, id: `o${stored.length + 1}`, status: "new", paid: false, notes: "", createdAt, updatedAt: createdAt });
 		},
 		async update(id, details, totalInCents) {
 			const order = stored.find((item) => item.id === id);
@@ -68,6 +68,9 @@ describe("order service", () => {
 		const { stored, service } = setup();
 		await service.place({
 			code: "K7P2QX",
+			paymentMethod: "credit_card",
+			customerClub: "Rotaract Club Centro",
+			customerDistrict: "4590",
 			items: [
 				{ productId: "12", size: "M", quantity: 2, unitPriceInCents: 1, name: "Hack" },
 				{ productId: "1", quantity: 1 },
@@ -76,6 +79,10 @@ describe("order service", () => {
 		expect(stored[0]).toMatchObject({
 			code: "K7P2QX",
 			status: "new",
+			paid: false,
+			paymentMethod: "credit_card",
+			customerClub: "Rotaract Club Centro",
+			customerDistrict: "4590",
 			totalInCents: 14500,
 			items: [
 				{ productId: "12", name: "Camiseta rosa", size: "M", quantity: 2, unitPriceInCents: 6000 },
@@ -86,7 +93,7 @@ describe("order service", () => {
 
 	it("ignores the same code sent twice (double tap)", async () => {
 		const { stored, service } = setup();
-		const payload = { code: "K7P2QX", items: [{ productId: "1", quantity: 1 }] };
+		const payload = { code: "K7P2QX", paymentMethod: "pix", items: [{ productId: "1", quantity: 1 }] };
 		await service.place(payload);
 		await expect(service.place(payload)).resolves.toEqual({ code: "K7P2QX" });
 		expect(stored).toHaveLength(1);
@@ -95,17 +102,17 @@ describe("order service", () => {
 	it("refuses products that are hidden or don't exist", async () => {
 		const { service } = setup();
 		await expect(
-			service.place({ code: "K7P2QX", items: [{ productId: "6", quantity: 1 }] }),
+			service.place({ code: "K7P2QX", paymentMethod: "pix", items: [{ productId: "6", quantity: 1 }] }),
 		).rejects.toBeInstanceOf(ValidationError);
 		await expect(
-			service.place({ code: "K7P2QX", items: [{ productId: "nao-existe", quantity: 1 }] }),
+			service.place({ code: "K7P2QX", paymentMethod: "pix", items: [{ productId: "nao-existe", quantity: 1 }] }),
 		).rejects.toBeInstanceOf(ValidationError);
 	});
 
 	it("lists newest first and counts by status", async () => {
 		const { service } = setup();
-		await service.place({ code: "AAAAAA", items: [{ productId: "1", quantity: 1 }] });
-		await service.place({ code: "BBBBBB", items: [{ productId: "1", quantity: 1 }] });
+		await service.place({ code: "AAAAAA", paymentMethod: "pix", items: [{ productId: "1", quantity: 1 }] });
+		await service.place({ code: "BBBBBB", paymentMethod: "pix", items: [{ productId: "1", quantity: 1 }] });
 		const first = await service.overview();
 		await service.patch(first.orders[1].id, { status: "delivered" });
 
@@ -117,20 +124,26 @@ describe("order service", () => {
 
 	it("edits customer and items and recalculates the total", async () => {
 		const { service } = setup();
-		await service.place({ code: "K7P2QX", items: [{ productId: "1", quantity: 1 }] });
+		await service.place({ code: "K7P2QX", paymentMethod: "pix", items: [{ productId: "1", quantity: 1 }] });
 		const [order] = (await service.overview()).orders;
 		const updated = await service.update(order.id, {
 			status: "confirmed",
-			payment: "pix",
+			paid: true,
+			paymentMethod: "debit_card",
 			customerName: "Maria",
+			customerClub: "Rotaract Club Centro",
+			customerDistrict: "4590",
 			customerPhone: "(19) 99999-8888",
 			notes: "Retira no evento",
 			items: [{ productId: "1", name: "Caneca", size: "", quantity: 3, unitPriceInCents: 2000 }],
 		});
 		expect(updated).toMatchObject({
 			status: "confirmed",
-			payment: "pix",
+			paid: true,
+			paymentMethod: "debit_card",
 			customerName: "Maria",
+			customerClub: "Rotaract Club Centro",
+			customerDistrict: "4590",
 			customerPhone: "5519999998888",
 			totalInCents: 6000,
 		});
@@ -138,7 +151,7 @@ describe("order service", () => {
 
 	it("deletes and reports missing orders", async () => {
 		const { service } = setup();
-		await service.place({ code: "K7P2QX", items: [{ productId: "1", quantity: 1 }] });
+		await service.place({ code: "K7P2QX", paymentMethod: "pix", items: [{ productId: "1", quantity: 1 }] });
 		const [order] = (await service.overview()).orders;
 		await service.delete(order.id);
 		await expect(service.get(order.id)).rejects.toBeInstanceOf(NotFoundError);

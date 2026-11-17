@@ -8,8 +8,12 @@ test.beforeEach(() => {
 });
 const asVisitor = () => ({ "x-real-ip": `10.30.0.${visitor}` });
 
-const placeOrder = (request: APIRequestContext, data: unknown, headers: Record<string, string> = {}) =>
-	request.post("/api/orders", { data, headers: { ...asVisitor(), ...headers } });
+/** The cart always sends a payment method: Pix unless the test says otherwise. */
+const placeOrder = (request: APIRequestContext, data: object, headers: Record<string, string> = {}) =>
+	request.post("/api/orders", {
+		data: { paymentMethod: "pix", ...data },
+		headers: { ...asVisitor(), ...headers },
+	});
 
 test("visitante registra pedido com preços do catálogo e o mesmo código não duplica", async ({ request }) => {
 	const code = randomOrderCode();
@@ -44,6 +48,14 @@ test("visitante registra pedido com preços do catálogo e o mesmo código não 
 test("pedidos inválidos são recusados", async ({ request }) => {
 	const item = { productId: "1", quantity: 1 };
 	expect((await placeOrder(request, { code: "abc", items: [item] })).status()).toBe(422);
+	// payment method: required, and only Pix, credit or debit
+	const withoutMethod = await request.post("/api/orders", {
+		data: { code: randomOrderCode(), items: [item] },
+		headers: asVisitor(),
+	});
+	expect(withoutMethod.status()).toBe(422);
+	expect((await placeOrder(request, { code: randomOrderCode(), paymentMethod: "cash", items: [item] })).status()).toBe(422);
+	expect((await placeOrder(request, { code: randomOrderCode(), paymentMethod: "", items: [item] })).status()).toBe(422);
 	expect((await placeOrder(request, { code: randomOrderCode(), items: [] })).status()).toBe(422);
 	expect((await placeOrder(request, { code: randomOrderCode(), items: [{ productId: "1", quantity: 0 }] })).status()).toBe(422);
 	expect((await placeOrder(request, { code: randomOrderCode(), items: [{ productId: "nao-existe", quantity: 1 }] })).status()).toBe(422);
@@ -91,8 +103,11 @@ test("admin muda status, edita (total recalculado) e exclui", async ({ request }
 
 	const details = {
 		status: "confirmed",
-		payment: "unpaid",
+		paid: false,
+		paymentMethod: "credit_card",
 		customerName: "João",
+		customerClub: "Rotaract Club Teste",
+		customerDistrict: "4590",
 		customerPhone: "(19) 99999-8888",
 		notes: "",
 		items: [{ productId: "1", name: "Caneca 850mL", size: "", quantity: 4, unitPriceInCents: 2000 }],
@@ -101,13 +116,17 @@ test("admin muda status, edita (total recalculado) e exclui", async ({ request }
 	expect(edited.status()).toBe(200);
 	expect((await edited.json()).data).toMatchObject({
 		status: "confirmed",
-		payment: "unpaid",
+		paid: false,
+		paymentMethod: "credit_card",
 		customerName: "João",
+		customerClub: "Rotaract Club Teste",
+		customerDistrict: "4590",
 		customerPhone: "5519999998888",
 		totalInCents: 8000,
 	});
 	expect((await request.put(path, { data: { ...details, items: [] } })).status()).toBe(422);
 	expect((await request.put(path, { data: { ...details, customerPhone: "123" } })).status()).toBe(422);
+	expect((await request.put(path, { data: { ...details, paymentMethod: "cash" } })).status()).toBe(422);
 
 	expect((await request.delete(path)).status()).toBe(204);
 	expect((await request.get(path)).status()).toBe(404);
@@ -122,13 +141,16 @@ test("rotas que já existiam continuam iguais", async ({ request }) => {
 	expect((await request.post("/api/auth/login", { data: { email: "e2e@local.test", password: "errada" } })).status()).toBe(401);
 });
 
-test("nome e celular do carrinho são gravados e o visitante não marca pagamento", async ({ request }) => {
+test("dados do carrinho são gravados e o visitante não marca como pago", async ({ request }) => {
 	const code = randomOrderCode();
 	const placed = await placeOrder(request, {
 		code,
+		paymentMethod: "debit_card",
 		customerName: "Ana",
+		customerClub: "Rotaract Club Teste",
+		customerDistrict: "4590",
 		customerPhone: "(11) 91234-5678",
-		payment: "pix",
+		paid: true,
 		items: [{ productId: "1", quantity: 1 }],
 	});
 	expect(placed.status()).toBe(201);
@@ -136,12 +158,21 @@ test("nome e celular do carrinho são gravados e o visitante não marca pagament
 
 	await loginAsAdmin(request);
 	const order = await findOrder(request, code);
-	expect(order).toMatchObject({ customerName: "Ana", customerPhone: "5511912345678", payment: "unpaid" });
+	expect(order).toMatchObject({
+		customerName: "Ana",
+		customerClub: "Rotaract Club Teste",
+		customerDistrict: "4590",
+		customerPhone: "5511912345678",
+		paymentMethod: "debit_card",
+		paid: false,
+	});
 
 	const path = `/api/orders/${order?.id}`;
-	const paid = await request.patch(path, { data: { payment: "cash" } });
-	expect((await paid.json()).data).toMatchObject({ payment: "cash", status: "new" });
-	expect((await request.patch(path, { data: { payment: "fiado" } })).status()).toBe(422);
+	const paid = await request.patch(path, { data: { paid: true } });
+	expect((await paid.json()).data).toMatchObject({ paid: true, paymentMethod: "debit_card", status: "new" });
+	const changed = await request.patch(path, { data: { paymentMethod: "pix" } });
+	expect((await changed.json()).data).toMatchObject({ paid: true, paymentMethod: "pix" });
+	expect((await request.patch(path, { data: { paymentMethod: "fiado" } })).status()).toBe(422);
 	expect((await request.patch(path, { data: {} })).status()).toBe(422);
 });
 

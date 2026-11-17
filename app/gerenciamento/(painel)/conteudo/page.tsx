@@ -49,11 +49,17 @@ export default async function ContentPage() {
 
 				<SettingsForm.Root section="labels" defaultValues={labels}>
 					<SettingsForm.Header
-						title="Selo de frete"
-						description="Aparece ao lado do preço. Deixe em branco para esconder. O selo dos destaques é o título da vitrine."
+						title="Selo de entrega"
+						description="Aparece ao lado do preço e no carrinho. Deixe em branco para esconder. O selo dos destaques é o título da vitrine."
 					/>
 					<SettingsForm.Content>
-						<Field.Text name="shipping" label="Texto do selo" placeholder="Frete Grátis" maxLength={30} className="sm:max-w-sm" />
+						<Field.Text
+							name="shipping"
+							label="Texto do selo"
+							placeholder="Entrega em eventos ou a combinar"
+							maxLength={40}
+							className="sm:max-w-md"
+						/>
 					</SettingsForm.Content>
 					<SettingsForm.Submit />
 				</SettingsForm.Root>

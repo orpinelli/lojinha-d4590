@@ -18,7 +18,15 @@ test("páginas da loja não vazam para os lados", async ({ page }) => {
 test("telas de pedidos do painel não vazam para os lados", async ({ page }) => {
 	const code = randomOrderCode();
 	await page.request.post("/api/orders", {
-		data: { code, items: [{ productId: "10", size: "GG", quantity: 12 }, { productId: "1", quantity: 1 }] },
+		data: {
+			code,
+			paymentMethod: "credit_card",
+			customerClub: "Rotaract Club de Um Nome Bem Comprido Para Testar",
+			items: [
+				{ productId: "10", size: "BABY LOOK GG EXTRA", quantity: 12 },
+				{ productId: "1", quantity: 1 },
+			],
+		},
 		headers: { "x-real-ip": "10.40.0.1" },
 	});
 	await loginAsAdmin(page.request);

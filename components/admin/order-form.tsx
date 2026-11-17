@@ -18,7 +18,13 @@ import { useAdminMutation } from "@/hooks/use-admin-mutation";
 import { adminApi } from "@/lib/api-client";
 import { applyServerErrors } from "@/lib/form-errors";
 import { formatPrice } from "@/modules/shared/domain/money";
-import { ORDER_PAYMENTS, ORDER_PAYMENT_LABELS, orderTotal, type Order } from "@/modules/orders/domain/order";
+import { MAX_SIZE_LENGTH } from "@/modules/catalog/domain/product";
+import {
+	PAYMENT_METHODS,
+	PAYMENT_METHOD_LABELS,
+	orderTotal,
+	type Order,
+} from "@/modules/orders/domain/order";
 import { orderDetailsSchema, type OrderDetailsInput } from "@/modules/orders/domain/order-schemas";
 
 export type OrderProductOption = { id: string; name: string; priceInCents: number; active: boolean };
@@ -29,6 +35,8 @@ const STATUS_OPTIONS = [
 	{ value: "delivered", label: "Entregue", description: "O cliente já recebeu.", icon: <Truck /> },
 	{ value: "canceled", label: "Cancelado", description: "O pedido não vai seguir.", icon: <CircleX /> },
 ];
+
+const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((value) => ({ value, label: PAYMENT_METHOD_LABELS[value] }));
 
 const amount = (value: unknown) => (Number.isFinite(value) ? Number(value) : 0);
 
@@ -106,7 +114,12 @@ function OrderItemsEditor({ products }: { products: OrderProductOption[] }) {
 					</div>
 					<Field.Text name={`items.${index}.name`} label="Produto" maxLength={120} />
 					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-						<Field.Text name={`items.${index}.size`} label="Tamanho" placeholder="Sem tamanho" maxLength={20} />
+						<Field.Text
+							name={`items.${index}.size`}
+							label="Tamanho"
+							placeholder="Sem tamanho"
+							maxLength={MAX_SIZE_LENGTH}
+						/>
 						<Field.Number name={`items.${index}.quantity`} label="Quantidade" />
 						<Field.Money
 							name={`items.${index}.unitPriceInCents`}
@@ -155,8 +168,11 @@ export function OrderForm({
 		resolver: zodResolver(orderDetailsSchema),
 		defaultValues: {
 			status: order.status,
-			payment: order.payment,
+			paid: order.paid,
+			paymentMethod: order.paymentMethod,
 			customerName: order.customerName,
+			customerClub: order.customerClub,
+			customerDistrict: order.customerDistrict,
 			customerPhone: order.customerPhone,
 			notes: order.notes,
 			items: order.items,
@@ -191,12 +207,13 @@ export function OrderForm({
 					<FormSection.Header title="Status e pagamento" />
 					<FormSection.Content>
 						<Field.Choice name="status" label="Situação do pedido" options={STATUS_OPTIONS} />
-						<Field.Select
-							name="payment"
-							label="Pagamento"
-							description="Escolher um meio de pagamento marca o pedido como pago."
-							options={ORDER_PAYMENTS.map((value) => ({ value, label: ORDER_PAYMENT_LABELS[value] }))}
+						<Field.Choice
+							name="paymentMethod"
+							label="Forma de pagamento"
+							description="Escolhida pelo cliente no carrinho."
+							options={PAYMENT_METHOD_OPTIONS}
 						/>
+						<Field.Switch name="paid" label="Pago" description="Ligue quando o pagamento chegar." />
 					</FormSection.Content>
 				</FormSection.Root>
 
@@ -205,6 +222,8 @@ export function OrderForm({
 					<FormSection.Content>
 						<div className="grid gap-5 sm:grid-cols-2">
 							<Field.Text name="customerName" label="Nome" placeholder="Ex.: Maria Silva" maxLength={120} />
+							<Field.Text name="customerClub" label="Clube" placeholder="Nome do clube" maxLength={120} />
+							<Field.Text name="customerDistrict" label="Distrito" placeholder="Ex.: 4590" maxLength={60} />
 							<Field.Phone name="customerPhone" label="WhatsApp" />
 						</div>
 						<Field.Textarea

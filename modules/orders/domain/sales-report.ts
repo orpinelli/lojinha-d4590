@@ -1,6 +1,6 @@
 import { DEFAULT_SIZES } from "@/modules/catalog/domain/product";
 import { brazilYearMonth } from "@/modules/shared/domain/dates";
-import type { Order, OrderPayment } from "./order";
+import type { Order, OrderPaymentMethod } from "./order";
 
 /**
  * The store's year runs from July 1 to June 30 (like the Rotary year), in
@@ -59,7 +59,8 @@ export type ProductSales = {
 };
 
 export type PaymentSales = {
-	payment: Exclude<OrderPayment, "unpaid">;
+	/** "" groups paid orders whose method was not informed. */
+	method: OrderPaymentMethod;
 	orders: number;
 	totalInCents: number;
 };
@@ -100,19 +101,20 @@ export function buildSalesReport(
 	const sold = inPeriod.filter((order) => order.status !== "canceled");
 
 	const products = new Map<string, ProductSales & { bySize: Map<string, number> }>();
-	const payments = new Map<PaymentSales["payment"], PaymentSales>();
+	const payments = new Map<OrderPaymentMethod, PaymentSales>();
 	let units = 0;
 	let totalInCents = 0;
 	let paidInCents = 0;
 
 	for (const order of sold) {
 		totalInCents += order.totalInCents;
-		if (order.payment !== "unpaid") {
+		if (order.paid) {
 			paidInCents += order.totalInCents;
-			const entry = payments.get(order.payment) ?? { payment: order.payment, orders: 0, totalInCents: 0 };
+			const method = order.paymentMethod;
+			const entry = payments.get(method) ?? { method, orders: 0, totalInCents: 0 };
 			entry.orders += 1;
 			entry.totalInCents += order.totalInCents;
-			payments.set(order.payment, entry);
+			payments.set(method, entry);
 		}
 		for (const item of order.items) {
 			const key = item.productId || `nome:${item.name.trim().toLowerCase()}`;

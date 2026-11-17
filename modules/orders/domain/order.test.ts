@@ -5,6 +5,7 @@ import {
 	ORDER_CODE_LENGTH,
 	orderTotal,
 	orderUnits,
+	paymentMethodLabel,
 	paymentSummary,
 } from "./order";
 import { buildOrderMessage } from "./order-message";
@@ -13,39 +14,64 @@ import { checkoutInputSchema, orderDetailsSchema, orderPatchSchema } from "./ord
 describe("customer and payment", () => {
 	const items = [{ productId: "1", quantity: 1 }];
 
-	it("cart: name and phone are optional, phone is normalized", () => {
-		expect(checkoutInputSchema.parse({ code: "K7P2QX", items })).toMatchObject({
+	it("cart: name, club, district and phone are optional, phone is normalized", () => {
+		expect(checkoutInputSchema.parse({ code: "K7P2QX", paymentMethod: "pix", items })).toMatchObject({
 			customerName: "",
+			customerClub: "",
+			customerDistrict: "",
 			customerPhone: "",
 		});
 		const filled = checkoutInputSchema.parse({
 			code: "K7P2QX",
+			paymentMethod: "pix",
 			items,
 			customerName: "  Maria ",
+			customerClub: " Rotaract Club Centro ",
+			customerDistrict: " 4590 ",
 			customerPhone: "(19) 99999-8888",
 		});
-		expect(filled).toMatchObject({ customerName: "Maria", customerPhone: "5519999998888" });
-		expect(checkoutInputSchema.safeParse({ code: "K7P2QX", items, customerPhone: "1234" }).success).toBe(false);
+		expect(filled).toMatchObject({
+			customerName: "Maria",
+			customerClub: "Rotaract Club Centro",
+			customerDistrict: "4590",
+			customerPhone: "5519999998888",
+		});
+		expect(
+			checkoutInputSchema.safeParse({ code: "K7P2QX", paymentMethod: "pix", items, customerPhone: "1234" }).success,
+		).toBe(false);
 	});
 
-	it("cart: a payment sent by the visitor is ignored", () => {
-		const parsed = checkoutInputSchema.parse({ code: "K7P2QX", items, payment: "pix" }) as Record<string, unknown>;
-		expect(parsed.payment).toBeUndefined();
+	it("cart: the payment method is required, and the visitor can't mark the order as paid", () => {
+		expect(checkoutInputSchema.safeParse({ code: "K7P2QX", items }).success).toBe(false);
+		expect(checkoutInputSchema.safeParse({ code: "K7P2QX", items, paymentMethod: "cash" }).success).toBe(false);
+		expect(checkoutInputSchema.safeParse({ code: "K7P2QX", items, paymentMethod: "" }).success).toBe(false);
+		const parsed = checkoutInputSchema.parse({
+			code: "K7P2QX",
+			items,
+			paymentMethod: "debit_card",
+			paid: true,
+		}) as Record<string, unknown>;
+		expect(parsed.paymentMethod).toBe("debit_card");
+		expect(parsed.paid).toBeUndefined();
 	});
 
-	it("quick change accepts status and/or payment, never nothing", () => {
-		expect(orderPatchSchema.parse({ payment: "pix" })).toEqual({ payment: "pix" });
-		expect(orderPatchSchema.parse({ status: "delivered", payment: "cash" })).toEqual({
+	it("quick change accepts status, paid and/or payment method, never nothing", () => {
+		expect(orderPatchSchema.parse({ paid: true })).toEqual({ paid: true });
+		expect(orderPatchSchema.parse({ status: "delivered", paymentMethod: "credit_card" })).toEqual({
 			status: "delivered",
-			payment: "cash",
+			paymentMethod: "credit_card",
 		});
 		expect(orderPatchSchema.safeParse({}).success).toBe(false);
-		expect(orderPatchSchema.safeParse({ payment: "fiado" }).success).toBe(false);
+		expect(orderPatchSchema.safeParse({ payment: "pix" }).success).toBe(false);
+		expect(orderPatchSchema.safeParse({ paymentMethod: "fiado" }).success).toBe(false);
+		expect(orderPatchSchema.safeParse({ paymentMethod: "" }).success).toBe(false);
 	});
 
 	it("summarizes the payment for the panel", () => {
-		expect(paymentSummary("unpaid")).toBe("Não pago");
-		expect(paymentSummary("credit_card")).toBe("Pago · Cartão de crédito");
+		expect(paymentSummary({ paid: false, paymentMethod: "" })).toBe("Não pago");
+		expect(paymentSummary({ paid: false, paymentMethod: "pix" })).toBe("Não pago · Pix");
+		expect(paymentSummary({ paid: true, paymentMethod: "credit_card" })).toBe("Pago · Cartão de crédito");
+		expect(paymentMethodLabel("")).toBe("Não informado");
 	});
 });
 
@@ -86,17 +112,18 @@ describe("order totals", () => {
 });
 
 describe("order message", () => {
-	it("writes the code, the items and the total", () => {
+	it("writes the code, the items, the total and the payment method", () => {
 		const message = buildOrderMessage({
 			code: "K7P2QX",
 			greeting: "Olá! Quero pedir:",
+			paymentMethod: "debit_card",
 			items: [
-				{ name: "Camiseta", size: "M", quantity: 2, priceInCents: 6000 },
+				{ name: "Camiseta", size: "BABY LOOK G", quantity: 2, priceInCents: 6000 },
 				{ name: "Caneca", quantity: 1, priceInCents: 2500 },
 			],
 		});
 		expect(message.replace(/\s/g, " ")).toBe(
-			"Olá! Quero pedir:  Pedido #K7P2QX 2x Camiseta (Tamanho: M) - R$ 60,00 1x Caneca - R$ 25,00  Total: R$ 145,00",
+			"Olá! Quero pedir:  Pedido #K7P2QX 2x Camiseta (Tamanho: BABY LOOK G) - R$ 60,00 1x Caneca - R$ 25,00  Total: R$ 145,00 Pagamento: Cartão de débito",
 		);
 	});
 });
@@ -105,20 +132,30 @@ describe("order schemas", () => {
 	it("accepts the cart payload and fills a missing size", () => {
 		const parsed = checkoutInputSchema.parse({
 			code: "K7P2QX",
+			paymentMethod: "pix",
 			items: [{ productId: "1", quantity: 2 }],
 		});
 		expect(parsed.items[0]).toEqual({ productId: "1", size: "", quantity: 2 });
 	});
 
+	it("accepts sizes up to 20 characters", () => {
+		const withSize = (size: string) =>
+			checkoutInputSchema.safeParse({ code: "K7P2QX", paymentMethod: "pix", items: [{ productId: "1", size, quantity: 1 }] });
+		expect(withSize("BABY LOOK G").success).toBe(true);
+		expect(withSize("X".repeat(20)).success).toBe(true);
+		expect(withSize("X".repeat(21)).success).toBe(false);
+	});
+
 	it("rejects empty carts and silly quantities", () => {
-		expect(checkoutInputSchema.safeParse({ code: "K7P2QX", items: [] }).success).toBe(false);
+		expect(checkoutInputSchema.safeParse({ code: "K7P2QX", paymentMethod: "pix", items: [] }).success).toBe(false);
 		expect(
-			checkoutInputSchema.safeParse({ code: "K7P2QX", items: [{ productId: "1", quantity: 0 }] }).success,
+			checkoutInputSchema.safeParse({ code: "K7P2QX", paymentMethod: "pix", items: [{ productId: "1", quantity: 0 }] })
+				.success,
 		).toBe(false);
 	});
 
 	it("normalizes the customer phone and validates it only when filled", () => {
-		const base = { status: "new", payment: "unpaid", customerName: "", notes: "", items: [
+		const base = { status: "new", paid: false, paymentMethod: "", customerName: "", customerClub: "", customerDistrict: "", notes: "", items: [
 			{ productId: "1", name: "Caneca", size: "", quantity: 1, unitPriceInCents: 2500 },
 		] };
 		expect(orderDetailsSchema.parse({ ...base, customerPhone: "(19) 99999-8888" }).customerPhone).toBe(

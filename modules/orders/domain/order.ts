@@ -21,35 +21,31 @@ export const ORDER_STATUS_GROUP_LABELS: Record<OrderStatus, string> = {
 	canceled: "Cancelados",
 };
 
-/** "unpaid" or how the customer paid: one field, so the two can never disagree. */
-export const ORDER_PAYMENTS = [
-	"unpaid",
-	"pix",
-	"cash",
-	"credit_card",
-	"debit_card",
-	"bank_transfer",
-	"other",
-] as const;
-export type OrderPayment = (typeof ORDER_PAYMENTS)[number];
+/** How the customer will pay: chosen in the cart, can be changed in the admin. */
+export const PAYMENT_METHODS = ["pix", "credit_card", "debit_card"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const ORDER_PAYMENT_LABELS: Record<OrderPayment, string> = {
-	unpaid: "Não pago",
+/** "" = not informed (orders made before the cart asked for it). */
+export type OrderPaymentMethod = PaymentMethod | "";
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 	pix: "Pix",
-	cash: "Dinheiro",
 	credit_card: "Cartão de crédito",
 	debit_card: "Cartão de débito",
-	bank_transfer: "Transferência",
-	other: "Outro",
 };
 
-export function isPaid(payment: OrderPayment): boolean {
-	return payment !== "unpaid";
+export function isPaymentMethod(value: unknown): value is PaymentMethod {
+	return (PAYMENT_METHODS as readonly unknown[]).includes(value);
 }
 
-/** "Pago · Pix" or "Não pago". */
-export function paymentSummary(payment: OrderPayment): string {
-	return isPaid(payment) ? `Pago · ${ORDER_PAYMENT_LABELS[payment]}` : ORDER_PAYMENT_LABELS.unpaid;
+export function paymentMethodLabel(method: OrderPaymentMethod): string {
+	return method ? PAYMENT_METHOD_LABELS[method] : "Não informado";
+}
+
+/** "Pago · Pix", "Não pago · Cartão de crédito" or just "Não pago" when the method is unknown. */
+export function paymentSummary({ paid, paymentMethod }: Pick<OrderDetails, "paid" | "paymentMethod">): string {
+	const status = paid ? "Pago" : "Não pago";
+	return paymentMethod ? `${status} · ${PAYMENT_METHOD_LABELS[paymentMethod]}` : status;
 }
 
 /**
@@ -68,9 +64,15 @@ export type OrderItem = {
 /** Everything the admin can edit. */
 export type OrderDetails = {
 	status: OrderStatus;
-	payment: OrderPayment;
+	/** Marked by the admin when the money arrives. */
+	paid: boolean;
+	paymentMethod: OrderPaymentMethod;
 	/** Optional, typed by the customer in the cart or by the admin. */
 	customerName: string;
+	/** Optional, like the name. */
+	customerClub: string;
+	/** Optional, like the name. */
+	customerDistrict: string;
 	/** Digits only, with the country code ("" when not informed). */
 	customerPhone: string;
 	notes: string;
@@ -87,10 +89,20 @@ export type Order = OrderDetails & {
 };
 
 /** What the storefront records when the visitor finishes the cart. */
-export type NewOrder = Pick<Order, "code" | "items" | "totalInCents" | "customerName" | "customerPhone">;
+export type NewOrder = Pick<
+	Order,
+	| "code"
+	| "items"
+	| "totalInCents"
+	| "paymentMethod"
+	| "customerName"
+	| "customerClub"
+	| "customerDistrict"
+	| "customerPhone"
+>;
 
 /** Quick changes made from the order page (one tap). */
-export type OrderPatch = Partial<Pick<OrderDetails, "status" | "payment">>;
+export type OrderPatch = Partial<Pick<OrderDetails, "status" | "paid">> & { paymentMethod?: PaymentMethod };
 
 export function orderTotal(items: Pick<OrderItem, "quantity" | "unitPriceInCents">[]): number {
 	return items.reduce((total, item) => total + item.quantity * item.unitPriceInCents, 0);
@@ -137,7 +149,7 @@ export interface OrderRepository {
 	findById(id: string): Promise<Order | null>;
 	/**
 	 * Visitors only insert (they never read orders back). Starts as "new" and
-	 * "unpaid". A repeated code throws ConflictError.
+	 * not paid. A repeated code throws ConflictError.
 	 */
 	create(order: NewOrder): Promise<void>;
 	update(id: string, details: OrderDetails, totalInCents: number): Promise<Order | null>;

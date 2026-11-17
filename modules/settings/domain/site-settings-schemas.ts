@@ -39,7 +39,8 @@ export const heroSchema = z.object({
 
 /** Highlight badges now come from each "Destaque" showcase title. */
 export const labelsSchema = z.object({
-	shipping: text(30),
+	/** Delivery pill next to the price (empty = hidden). */
+	shipping: text(40),
 });
 
 export const contactSchema = z.object({

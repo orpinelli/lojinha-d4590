@@ -21,12 +21,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { RadioCard } from "@/components/ui/radio-card";
 import { SectionLabel } from "@/components/ui/section-label";
 import { useCart, type CartItem } from "@/contexts/cart-context";
 import { useSiteSettings } from "@/contexts/site-settings-context";
 import { useCheckout, type CheckoutCustomer, type PlacedOrder } from "@/hooks/use-checkout";
 import { cn } from "@/lib/utils";
 import { productPath } from "@/modules/catalog/domain/product";
+import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/modules/orders/domain/order";
 import { isValidWhatsapp, normalizeWhatsapp, onlyDigits } from "@/modules/shared/domain/phone";
 
 /*
@@ -34,12 +36,19 @@ import { isValidWhatsapp, normalizeWhatsapp, onlyDigits } from "@/modules/shared
  * only in its own state, so a page composes all of them and the right one shows.
  */
 
-/** Name and phone are remembered in this browser for the next order. */
+/** The customer details are remembered in this browser for the next order. */
 const CUSTOMER_KEY = "rotaract-customer";
+
+const EMPTY_CUSTOMER: CheckoutCustomer = { name: "", club: "", district: "", phone: "" };
 
 type CartPageContextValue = {
 	placed: PlacedOrder | null;
 	checkout: () => void;
+	/** Required: chosen before finishing (null = not chosen yet). */
+	paymentMethod: PaymentMethod | null;
+	setPaymentMethod: (method: PaymentMethod) => void;
+	paymentError: string | null;
+	paymentGroupRef: RefObject<HTMLDivElement | null>;
 	/** Optional details typed by the visitor (phone as digits). */
 	customer: CheckoutCustomer;
 	setCustomer: (changes: Partial<CheckoutCustomer>) => void;
@@ -47,13 +56,22 @@ type CartPageContextValue = {
 	phoneInputRef: RefObject<HTMLInputElement | null>;
 };
 
+const PAYMENT_ERROR = "Escolha a forma de pagamento.";
 const PHONE_ERROR = "Confira o número com DDD, ou deixe em branco.";
+
+const savedText = (value: unknown, max: number) => (typeof value === "string" ? value.slice(0, max) : "");
 
 function readSavedCustomer(): CheckoutCustomer | null {
 	try {
 		const saved = JSON.parse(localStorage.getItem(CUSTOMER_KEY) ?? "null") as Partial<CheckoutCustomer> | null;
 		if (!saved || typeof saved.name !== "string" || typeof saved.phone !== "string") return null;
-		return { name: saved.name.slice(0, 120), phone: onlyDigits(saved.phone).slice(0, 15) };
+		return {
+			name: savedText(saved.name, 120),
+			// Saved before these fields existed: start empty.
+			club: savedText(saved.club, 120),
+			district: savedText(saved.district, 60),
+			phone: onlyDigits(saved.phone).slice(0, 15),
+		};
 	} catch {
 		return null; // blocked or corrupted storage: start empty
 	}
@@ -80,7 +98,10 @@ function useCartState(): CartState {
 export function CartRoot({ children }: { children: ReactNode }) {
 	const runCheckout = useCheckout();
 	const [placed, setPlaced] = useState<PlacedOrder | null>(null);
-	const [customer, setCustomerState] = useState<CheckoutCustomer>({ name: "", phone: "" });
+	const [paymentMethod, setPaymentMethodState] = useState<PaymentMethod | null>(null);
+	const [paymentError, setPaymentError] = useState<string | null>(null);
+	const paymentGroupRef = useRef<HTMLDivElement | null>(null);
+	const [customer, setCustomerState] = useState<CheckoutCustomer>(EMPTY_CUSTOMER);
 	const [customerLoaded, setCustomerLoaded] = useState(false);
 	const [phoneError, setPhoneError] = useState<string | null>(null);
 	const phoneInputRef = useRef<HTMLInputElement | null>(null);
@@ -101,6 +122,11 @@ export function CartRoot({ children }: { children: ReactNode }) {
 		}
 	}, [customer, customerLoaded]);
 
+	const setPaymentMethod = (method: PaymentMethod) => {
+		setPaymentMethodState(method);
+		setPaymentError(null);
+	};
+
 	const setCustomer = (changes: Partial<CheckoutCustomer>) => {
 		setCustomerState((current) => ({ ...current, ...changes }));
 		if (changes.phone !== undefined) setPhoneError(null);
@@ -119,12 +145,21 @@ export function CartRoot({ children }: { children: ReactNode }) {
 	};
 
 	const checkout = () => {
-		if (!validatePhone()) {
+		setPaymentError(paymentMethod ? null : PAYMENT_ERROR);
+		const phoneValid = validatePhone();
+		if (!paymentMethod) {
+			// The payment comes first on the page: start there.
+			paymentGroupRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+			return;
+		}
+		if (!phoneValid) {
 			phoneInputRef.current?.focus();
 			return;
 		}
-		const order = runCheckout({
+		const order = runCheckout(paymentMethod, {
 			name: customer.name.trim(),
+			club: customer.club.trim(),
+			district: customer.district.trim(),
 			phone: normalizeWhatsapp(customer.phone),
 		});
 		if (order) {
@@ -135,7 +170,18 @@ export function CartRoot({ children }: { children: ReactNode }) {
 
 	return (
 		<CartPageContext.Provider
-			value={{ placed, checkout, customer, setCustomer, phoneError, phoneInputRef }}
+			value={{
+				placed,
+				checkout,
+				paymentMethod,
+				setPaymentMethod,
+				paymentError,
+				paymentGroupRef,
+				customer,
+				setCustomer,
+				phoneError,
+				phoneInputRef,
+			}}
 		>
 			<div className="space-y-6 sm:space-y-8">{children}</div>
 		</CartPageContext.Provider>
@@ -273,11 +319,55 @@ export function CartLines() {
 	);
 }
 
-/** Optional name and phone: only feed the store's order history. */
+/** Required choice: Pix, credit card or debit card. */
+export function CartPayment() {
+	const { paymentMethod, setPaymentMethod, paymentError, paymentGroupRef } = useCartPage();
+	const titleId = useId();
+	const errorId = useId();
+	const name = useId();
+	return (
+		<div
+			ref={paymentGroupRef}
+			role="radiogroup"
+			aria-labelledby={titleId}
+			aria-required
+			aria-invalid={paymentError ? true : undefined}
+			aria-describedby={paymentError ? errorId : undefined}
+			className="space-y-3 border-t-2 pt-5"
+		>
+			<p id={titleId} className="text-sm font-extrabold text-foreground">
+				Forma de pagamento
+			</p>
+			<div className="grid gap-2">
+				{PAYMENT_METHODS.map((method) => (
+					<RadioCard
+						key={method}
+						name={name}
+						value={method}
+						checked={paymentMethod === method}
+						onChange={() => setPaymentMethod(method)}
+						className={cn("items-center py-2.5", paymentError && "border-destructive/60")}
+					>
+						<span className="text-sm font-extrabold text-foreground">{PAYMENT_METHOD_LABELS[method]}</span>
+					</RadioCard>
+				))}
+			</div>
+			{paymentError && (
+				<p id={errorId} role="alert" className="text-sm font-bold text-destructive">
+					{paymentError}
+				</p>
+			)}
+		</div>
+	);
+}
+
+/** Optional name, club, district and phone: only feed the store's order history. */
 export function CartCustomer() {
 	const { customer, setCustomer, phoneError, phoneInputRef } = useCartPage();
 	const titleId = useId();
 	const nameId = useId();
+	const clubId = useId();
+	const districtId = useId();
 	const phoneId = useId();
 	const errorId = useId();
 	return (
@@ -294,6 +384,26 @@ export function CartCustomer() {
 					placeholder="Como podemos te chamar?"
 					value={customer.name}
 					onChange={(event) => setCustomer({ name: event.target.value })}
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor={clubId}>Clube</Label>
+				<Input
+					id={clubId}
+					maxLength={120}
+					placeholder="Nome do seu clube"
+					value={customer.club}
+					onChange={(event) => setCustomer({ club: event.target.value })}
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor={districtId}>Distrito</Label>
+				<Input
+					id={districtId}
+					maxLength={60}
+					placeholder="Ex.: 4590"
+					value={customer.district}
+					onChange={(event) => setCustomer({ district: event.target.value })}
 				/>
 			</div>
 			<div className="space-y-2">
@@ -319,7 +429,7 @@ export function CartCustomer() {
 	);
 }
 
-/** Totals + the confirm button (children, e.g. Cart.Customer, go right above it). */
+/** Totals + the confirm button (children, e.g. Cart.Payment and Cart.Customer, go right above it). */
 export function CartSummary({ children }: { children?: ReactNode }) {
 	const { count, totalInCents } = useCart();
 	const { checkout } = useCartPage();
@@ -403,6 +513,10 @@ export function CartPlaced() {
 						<Price cents={item.priceInCents * item.quantity} className="shrink-0 text-sm font-bold" />
 					</li>
 				))}
+				<li className="flex items-baseline justify-between gap-3 p-3">
+					<span className="text-sm font-semibold text-muted-foreground">Pagamento</span>
+					<span className="text-sm font-bold text-foreground">{PAYMENT_METHOD_LABELS[placed.paymentMethod]}</span>
+				</li>
 				<li className="flex items-baseline justify-between gap-3 p-3">
 					<span className="text-sm font-extrabold tracking-[1px] text-label uppercase">Total</span>
 					<Price cents={placed.totalInCents} className="font-display text-2xl font-semibold" />

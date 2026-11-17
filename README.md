@@ -11,24 +11,26 @@ clique (ou toque no celular) abre a tela cheia, com pinça ou toque duplo para
 ampliar, arrastar para ver os detalhes e deslizar entre as fotos.
 
 **Carrinho (`/carrinho`)**: o visitante revisa os itens (tamanho, quantidade,
-remover) e o total antes de confirmar, e pode informar nome e celular (os dois
-são opcionais). "Finalizar pelo WhatsApp" abre a conversa com o pedido já
-escrito e registra o pedido no painel.
+remover) e o total, escolhe a forma de pagamento (Pix, cartão de crédito ou
+cartão de débito, obrigatória) e pode informar nome, clube, distrito e celular
+(opcionais). "Finalizar pelo WhatsApp" abre a conversa com o pedido já escrito
+(com a forma de pagamento) e registra o pedido no painel.
 
 **Pedidos** são registrados quando o visitante finaliza o carrinho. Cada pedido
 tem um código (ex.: `#K7P2QX`) que também vai na mensagem do WhatsApp, para
 achar a conversa. Nomes e preços vêm do catálogo no servidor (o visitante não
 consegue mudar o preço). No painel dá para filtrar por status (Novo,
-Confirmado, Entregue, Cancelado), ver quem comprou (nome e celular), os
-detalhes, mudar o status e o pagamento com um toque (Não pago, Pix, Dinheiro,
-Cartão de crédito, Cartão de débito, Transferência ou Outro), editar cliente,
-observações e itens (o total é recalculado) e excluir.
+Confirmado, Entregue, Cancelado), ver quem comprou (nome, clube, distrito e
+celular), os detalhes e a forma de pagamento escolhida no carrinho, mudar com
+um toque o status, a forma de pagamento (Pix, Cartão de crédito ou Cartão de
+débito) e se já foi pago, editar cliente, observações e itens (o total é
+recalculado) e excluir.
 
 **Vendas** usa o ano da loja, de **1º de julho a 30 de junho** (ex.: 2026-27 =
 1º/07/2026 a 30/06/2027, no horário de Brasília), ou **Total** (todos os anos).
 O filtro mostra sozinho todo o histórico e sempre os 3 anos seguintes ao atual.
 Sem os pedidos cancelados: total vendido, recebido, a receber, itens vendidos,
-cada produto com a quantidade (e os tamanhos) e o valor, e o recebido por meio
+cada produto com a quantidade (e os tamanhos) e o valor, e o recebido por forma
 de pagamento.
 
 **Vitrines** são as seções da página inicial, uma embaixo da outra, na ordem
@@ -120,10 +122,10 @@ Components.
 | `GET` / `POST`   | `/api/showcases`        | Público (vitrines da home com produtos) / Admin. `?all=true` só admin |
 | `GET` `PUT` `DELETE` | `/api/showcases/:id` | Admin                                                  |
 | `PUT`            | `/api/showcases/order`  | Admin — `{ "ids": [...] }` na nova ordem da página      |
-| `POST`           | `/api/orders`           | Público — `{ code, customerName?, customerPhone?, items: [{ productId, size?, quantity }] }` (preços vêm do catálogo; limite por visitante) |
+| `POST`           | `/api/orders`           | Público — `{ code, paymentMethod, customerName?, customerClub?, customerDistrict?, customerPhone?, items: [{ productId, size?, quantity }] }` (preços vêm do catálogo; limite por visitante) |
 | `GET`            | `/api/orders`           | Admin — mais recentes primeiro. `?status=new` filtra    |
-| `GET` `PUT` `DELETE` | `/api/orders/:id`   | Admin — `PUT` recebe `{ status, payment, customerName, customerPhone, notes, items }` e recalcula o total |
-| `PATCH`          | `/api/orders/:id`       | Admin — troca rápida: `{ "status": "confirmed" }`, `{ "payment": "pix" }` ou os dois |
+| `GET` `PUT` `DELETE` | `/api/orders/:id`   | Admin — `PUT` recebe `{ status, paid, paymentMethod, customerName, customerClub, customerDistrict, customerPhone, notes, items }` e recalcula o total |
+| `PATCH`          | `/api/orders/:id`       | Admin — troca rápida: qualquer um de `{ "status": "confirmed", "paid": true, "paymentMethod": "pix" }` |
 | `GET` / `PATCH`  | `/api/settings`         | Público / Admin — corpo `{ "<seção>": { …completa } }`  |
 | `POST`           | `/api/uploads`          | Admin — `multipart/form-data`, campo `file`, até 5 MB   |
 | `POST`           | `/api/auth/login`       | `{ "email", "password" }`                               |
@@ -133,15 +135,16 @@ Components.
 Respostas: `{ "data": … }` ou `{ "error": { "code", "message", "fieldErrors"? } }`.
 Seções de configuração: `branding`, `theme`, `hero`, `labels`, `contact`, `footer`.
 Status de pedido: `new`, `confirmed`, `delivered`, `canceled`.
-Pagamento: `unpaid`, `pix`, `cash`, `credit_card`, `debit_card`, `bank_transfer`, `other`.
+Forma de pagamento: `pix`, `credit_card`, `debit_card` (`""` = não informada, só em pedidos antigos); pago: `paid` (true/false).
 
 ## Supabase (produção)
 
 1. Aplique as migrations de `supabase/migrations/` em ordem (SQL Editor ou MCP).
-   As de pedidos são `20261116120000_orders.sql` e
-   `20261116190000_orders_customer_payment.sql` (nome/celular e pagamento):
-   sem elas a loja continua funcionando, mas os pedidos não são registrados e o
-   painel avisa o que falta.
+   As de pedidos são `20261116120000_orders.sql`,
+   `20261116190000_orders_customer_payment.sql` (nome/celular e pagamento) e
+   `20261116230000_orders_payment_method_club.sql` (forma de pagamento do
+   carrinho, pago/não pago, clube e distrito): sem elas a loja continua
+   funcionando, mas os pedidos não são registrados e o painel avisa o que falta.
 2. **Authentication → Users → Add user**: e-mail + senha forte, marque *Auto Confirm User*.
 3. Rode `supabase/grant-admin.sql` trocando o e-mail.
 4. **Authentication → Sign In / Providers**: desative *Allow new users to sign up*.
@@ -154,8 +157,9 @@ Pagamento: `unpaid`, `pix`, `cash`, `credit_card`, `debit_card`, `bank_transfer`
 - **RLS** em todas as tabelas: visitantes só leem o catálogo; escrever exige
   estar em `admin_users` (função `private.is_admin()`, fora da API pública).
 - **Pedidos**: o visitante só consegue *inserir* um pedido novo, e só as colunas
-  `code`, `items`, `total_in_cents`, `customer_name` e `customer_phone`
-  (status, pagamento e observações ficam no padrão). Ler, alterar e excluir é
+  `code`, `items`, `total_in_cents`, `payment_method`, `customer_name`,
+  `customer_club`, `customer_district` e `customer_phone` (status, pago e
+  observações ficam no padrão). Ler, alterar e excluir é
   só do admin. A API ainda limita quantos pedidos um mesmo visitante envia em
   sequência.
 - O app usa só a chave publicável; a `service_role` nunca entra no código.

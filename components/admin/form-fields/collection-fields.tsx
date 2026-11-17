@@ -12,7 +12,7 @@ import { Sortable, SortableHandle, SortableItem } from "@/components/ui/sortable
 import { useImageUpload } from "@/hooks/use-image-upload";
 import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { cn } from "@/lib/utils";
-import { DEFAULT_SIZES } from "@/modules/catalog/domain/product";
+import { DEFAULT_SIZES, MAX_SIZE_LENGTH } from "@/modules/catalog/domain/product";
 import { ACCEPTED_IMAGE_TYPES } from "@/modules/media/domain/media";
 import { FieldFrame, type BaseFieldProps } from "./field-frame";
 
@@ -432,8 +432,8 @@ export function SizesField({ name, label, description, className }: BaseFieldPro
 											addCustom();
 										}
 									}}
-									placeholder="Outro tamanho (ex.: 2XG)"
-									maxLength={10}
+									placeholder="Outro tamanho (ex.: Baby look G)"
+									maxLength={MAX_SIZE_LENGTH}
 									aria-label="Adicionar outro tamanho"
 								/>
 								<Button type="button" variant="outline" onClick={addCustom} className="shrink-0">
