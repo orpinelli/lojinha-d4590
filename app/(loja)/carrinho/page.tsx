@@ -25,11 +25,14 @@ export default function CartPage() {
 					<Cart.Loading />
 					<Cart.Empty />
 					<Cart.Review>
-						<Cart.Lines />
-						<Cart.Summary>
+						<Cart.Sections>
+							<Cart.Items>
+								<Cart.Lines />
+							</Cart.Items>
 							<Cart.Payment />
 							<Cart.Customer />
-						</Cart.Summary>
+						</Cart.Sections>
+						<Cart.Summary />
 					</Cart.Review>
 					<Cart.Placed />
 				</Cart.Root>

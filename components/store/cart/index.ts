@@ -2,12 +2,14 @@ import {
 	CartCustomer,
 	CartEmpty,
 	CartHeader,
+	CartItems,
 	CartLines,
 	CartLoading,
 	CartPayment,
 	CartPlaced,
 	CartReview,
 	CartRoot,
+	CartSections,
 	CartSummary,
 } from "./cart";
 
@@ -19,11 +21,14 @@ import {
  *   <Cart.Loading />
  *   <Cart.Empty />
  *   <Cart.Review>
- *     <Cart.Lines />
- *     <Cart.Summary>
+ *     <Cart.Sections>            (drawers that open and close)
+ *       <Cart.Items>
+ *         <Cart.Lines />
+ *       </Cart.Items>
  *       <Cart.Payment />
  *       <Cart.Customer />
- *     </Cart.Summary>
+ *     </Cart.Sections>
+ *     <Cart.Summary />            (sticky: totals + finish button)
  *   </Cart.Review>
  *   <Cart.Placed />
  * </Cart.Root>
@@ -34,6 +39,8 @@ export const Cart = {
 	Loading: CartLoading,
 	Empty: CartEmpty,
 	Review: CartReview,
+	Sections: CartSections,
+	Items: CartItems,
 	Lines: CartLines,
 	Summary: CartSummary,
 	Payment: CartPayment,

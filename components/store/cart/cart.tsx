@@ -12,12 +12,18 @@ import {
 	type ReactNode,
 	type RefObject,
 } from "react";
+import { flushSync } from "react-dom";
 import { CircleCheck, MessageCircle, ShoppingCart, Trash2 } from "lucide-react";
 import { Price } from "@/components/store/price";
 import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { QuantityStepper } from "@/components/store/quantity-stepper";
-import { ShippingBadge } from "@/components/store/store-badges";
 import { Button } from "@/components/ui/button";
+import {
+	DisclosureContent,
+	DisclosureRoot,
+	DisclosureTrigger,
+	useDisclosureOpen,
+} from "@/components/ui/disclosure";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -29,6 +35,7 @@ import { useCheckout, type CheckoutCustomer, type PlacedOrder } from "@/hooks/us
 import { cn } from "@/lib/utils";
 import { productPath } from "@/modules/catalog/domain/product";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/modules/orders/domain/order";
+import { formatPrice } from "@/modules/shared/domain/money";
 import { isValidWhatsapp, normalizeWhatsapp, onlyDigits } from "@/modules/shared/domain/phone";
 
 /*
@@ -41,9 +48,17 @@ const CUSTOMER_KEY = "rotaract-customer";
 
 const EMPTY_CUSTOMER: CheckoutCustomer = { name: "", club: "", district: "", phone: "" };
 
+/** The drawers of the review step. */
+type CartSection = "items" | "payment" | "customer";
+
+/** Items and payment start open; the optional details start closed (less scrolling). */
+const INITIAL_SECTIONS: Record<CartSection, boolean> = { items: true, payment: true, customer: false };
+
 type CartPageContextValue = {
 	placed: PlacedOrder | null;
 	checkout: () => void;
+	openSections: Record<CartSection, boolean>;
+	setSectionOpen: (section: CartSection, open: boolean) => void;
 	/** Required: chosen before finishing (null = not chosen yet). */
 	paymentMethod: PaymentMethod | null;
 	setPaymentMethod: (method: PaymentMethod) => void;
@@ -98,6 +113,7 @@ function useCartState(): CartState {
 export function CartRoot({ children }: { children: ReactNode }) {
 	const runCheckout = useCheckout();
 	const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+	const [openSections, setOpenSections] = useState(INITIAL_SECTIONS);
 	const [paymentMethod, setPaymentMethodState] = useState<PaymentMethod | null>(null);
 	const [paymentError, setPaymentError] = useState<string | null>(null);
 	const paymentGroupRef = useRef<HTMLDivElement | null>(null);
@@ -121,6 +137,22 @@ export function CartRoot({ children }: { children: ReactNode }) {
 			// Private mode / blocked storage: works for this visit only.
 		}
 	}, [customer, customerLoaded]);
+
+	const setSectionOpen = (section: CartSection, open: boolean) =>
+		setOpenSections((current) => ({ ...current, [section]: open }));
+
+	/**
+	 * Opens a drawer right away (flushSync), focuses the field inside and centers
+	 * it on screen, so the sticky header can't cover it.
+	 */
+	const reveal = (section: CartSection, target: () => HTMLElement | null | undefined) => {
+		flushSync(() => setSectionOpen(section, true));
+		const element = target();
+		if (!element) return;
+		element.focus({ preventScroll: true });
+		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		element.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+	};
 
 	const setPaymentMethod = (method: PaymentMethod) => {
 		setPaymentMethodState(method);
@@ -149,11 +181,11 @@ export function CartRoot({ children }: { children: ReactNode }) {
 		const phoneValid = validatePhone();
 		if (!paymentMethod) {
 			// The payment comes first on the page: start there.
-			paymentGroupRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+			reveal("payment", () => paymentGroupRef.current?.querySelector<HTMLInputElement>("input"));
 			return;
 		}
 		if (!phoneValid) {
-			phoneInputRef.current?.focus();
+			reveal("customer", () => phoneInputRef.current);
 			return;
 		}
 		const order = runCheckout(paymentMethod, {
@@ -173,6 +205,8 @@ export function CartRoot({ children }: { children: ReactNode }) {
 			value={{
 				placed,
 				checkout,
+				openSections,
+				setSectionOpen,
 				paymentMethod,
 				setPaymentMethod,
 				paymentError,
@@ -234,7 +268,7 @@ export function CartEmpty() {
 	);
 }
 
-/** Two columns on desktop: items on the left, sticky summary on the right. */
+/** Two columns on desktop: the drawers on the left, the sticky summary on the right. */
 export function CartReview({ className, ...props }: ComponentProps<"div">) {
 	if (useCartState() !== "review") return null;
 	return (
@@ -248,11 +282,63 @@ export function CartReview({ className, ...props }: ComponentProps<"div">) {
 	);
 }
 
+/** Left column: the drawers (items, payment, customer details), one under the other. */
+export function CartSections({ className, ...props }: ComponentProps<"div">) {
+	return <div className={cn("min-w-0 space-y-4", className)} {...props} />;
+}
+
+/** Title, a hint next to it and a summary that shows only while the drawer is closed. */
+function CartDrawerHeading({ title, hint, summary }: { title: string; hint?: string; summary?: string }) {
+	const open = useDisclosureOpen();
+	return (
+		<>
+			<span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+				<span className="font-display text-xl leading-tight font-semibold text-foreground">{title}</span>
+				{hint && <span className="text-[13px] font-semibold text-muted-foreground">{hint}</span>}
+			</span>
+			{!open && summary && (
+				<span className="mt-1 block truncate text-sm font-semibold text-muted-foreground">{summary}</span>
+			)}
+		</>
+	);
+}
+
+/** One drawer of the cart; its open state lives in Cart.Root (checkout can open it). */
+function CartDrawer({
+	section,
+	title,
+	hint,
+	summary,
+	invalid = false,
+	children,
+}: {
+	section: CartSection;
+	title: string;
+	hint?: string;
+	summary?: string;
+	invalid?: boolean;
+	children: ReactNode;
+}) {
+	const { openSections, setSectionOpen } = useCartPage();
+	return (
+		<DisclosureRoot
+			open={openSections[section]}
+			onOpenChange={(open) => setSectionOpen(section, open)}
+			className={cn("rounded-2xl border-2 transition-colors", invalid && "border-destructive/60")}
+		>
+			<DisclosureTrigger className="rounded-2xl px-4 py-4 sm:px-5">
+				<CartDrawerHeading title={title} hint={hint} summary={summary} />
+			</DisclosureTrigger>
+			<DisclosureContent className="border-t-2 px-4 pt-4 pb-5 sm:px-5">{children}</DisclosureContent>
+		</DisclosureRoot>
+	);
+}
+
 function CartLine({ item }: { item: CartItem }) {
 	const { updateQuantity, removeItem } = useCart();
 	const href = productPath({ id: item.productId });
 	return (
-		<li className="flex gap-3 rounded-2xl border-2 p-3 sm:gap-4 sm:p-4">
+		<li className="flex gap-3 py-4 first:pt-0 last:pb-0 sm:gap-4">
 			<Link
 				href={href}
 				className={cn("relative size-20 shrink-0 overflow-hidden rounded-xl sm:size-24", PRODUCT_PHOTO_FRAME)}
@@ -311,7 +397,7 @@ function CartLine({ item }: { item: CartItem }) {
 export function CartLines() {
 	const { items } = useCart();
 	return (
-		<ul aria-label="Itens do carrinho" className="space-y-3">
+		<ul aria-label="Itens do carrinho" className="divide-y-2">
 			{items.map((item) => (
 				<CartLine key={`${item.productId}-${item.size ?? ""}`} item={item} />
 			))}
@@ -319,26 +405,43 @@ export function CartLines() {
 	);
 }
 
-/** Required choice: Pix, credit card or debit card. */
+/** Drawer with the cart lines (Cart.Lines goes inside); closed, it lists what is in the cart. */
+export function CartItems({ children }: { children: ReactNode }) {
+	const { items, count, totalInCents } = useCart();
+	return (
+		<CartDrawer
+			section="items"
+			title="Itens"
+			hint={`${count} ${count === 1 ? "item" : "itens"} · ${formatPrice(totalInCents)}`}
+			summary={items.map((item) => `${item.quantity}x ${item.name}`).join(", ")}
+		>
+			{children}
+		</CartDrawer>
+	);
+}
+
+/** Required drawer: Pix, credit card or debit card. */
 export function CartPayment() {
 	const { paymentMethod, setPaymentMethod, paymentError, paymentGroupRef } = useCartPage();
-	const titleId = useId();
 	const errorId = useId();
 	const name = useId();
 	return (
-		<div
-			ref={paymentGroupRef}
-			role="radiogroup"
-			aria-labelledby={titleId}
-			aria-required
-			aria-invalid={paymentError ? true : undefined}
-			aria-describedby={paymentError ? errorId : undefined}
-			className="space-y-3 border-t-2 pt-5"
+		<CartDrawer
+			section="payment"
+			title="Forma de pagamento"
+			hint={paymentMethod ? undefined : "obrigatória"}
+			summary={paymentMethod ? PAYMENT_METHOD_LABELS[paymentMethod] : "Escolha Pix, crédito ou débito"}
+			invalid={Boolean(paymentError)}
 		>
-			<p id={titleId} className="text-sm font-extrabold text-foreground">
-				Forma de pagamento
-			</p>
-			<div className="grid gap-2">
+			<div
+				ref={paymentGroupRef}
+				role="radiogroup"
+				aria-label="Forma de pagamento"
+				aria-required
+				aria-invalid={paymentError ? true : undefined}
+				aria-describedby={paymentError ? errorId : undefined}
+				className="grid gap-2 md:grid-cols-3"
+			>
 				{PAYMENT_METHODS.map((method) => (
 					<RadioCard
 						key={method}
@@ -353,86 +456,97 @@ export function CartPayment() {
 				))}
 			</div>
 			{paymentError && (
-				<p id={errorId} role="alert" className="text-sm font-bold text-destructive">
+				<p id={errorId} role="alert" className="mt-3 text-sm font-bold text-destructive">
 					{paymentError}
 				</p>
 			)}
-		</div>
+		</CartDrawer>
 	);
 }
 
-/** Optional name, club, district and phone: only feed the store's order history. */
+/** "Maria · Rotaract Club Centro · Distrito 4590" (what was filled), for the closed drawer. */
+function customerSummary({ name, club, district, phone }: CheckoutCustomer): string {
+	const parts = [name.trim(), club.trim(), district.trim() && `Distrito ${district.trim()}`].filter(Boolean);
+	if (parts.length > 0) return parts.join(" · ");
+	return phone ? "Celular informado" : "Nome, clube, distrito e celular";
+}
+
+/** Optional drawer: name, club, district and phone only feed the store's order history. */
 export function CartCustomer() {
 	const { customer, setCustomer, phoneError, phoneInputRef } = useCartPage();
-	const titleId = useId();
 	const nameId = useId();
 	const clubId = useId();
 	const districtId = useId();
 	const phoneId = useId();
 	const errorId = useId();
 	return (
-		<div role="group" aria-labelledby={titleId} className="space-y-4 border-t-2 pt-5">
-			<p id={titleId} className="text-sm font-extrabold text-foreground">
-				Seus dados <span className="font-semibold text-muted-foreground">(opcional)</span>
-			</p>
-			<div className="space-y-2">
-				<Label htmlFor={nameId}>Nome</Label>
-				<Input
-					id={nameId}
-					autoComplete="name"
-					maxLength={120}
-					placeholder="Como podemos te chamar?"
-					value={customer.name}
-					onChange={(event) => setCustomer({ name: event.target.value })}
-				/>
+		<CartDrawer
+			section="customer"
+			title="Seus dados"
+			hint="opcional"
+			summary={customerSummary(customer)}
+			invalid={Boolean(phoneError)}
+		>
+			<div className="grid gap-4 sm:max-w-md">
+				<div className="space-y-2">
+					<Label htmlFor={nameId}>Nome</Label>
+					<Input
+						id={nameId}
+						autoComplete="name"
+						maxLength={120}
+						placeholder="Como podemos te chamar?"
+						value={customer.name}
+						onChange={(event) => setCustomer({ name: event.target.value })}
+					/>
+				</div>
+				<div className="space-y-2">
+					<Label htmlFor={clubId}>Clube</Label>
+					<Input
+						id={clubId}
+						maxLength={120}
+						placeholder="Nome do seu clube"
+						value={customer.club}
+						onChange={(event) => setCustomer({ club: event.target.value })}
+					/>
+				</div>
+				<div className="space-y-2">
+					<Label htmlFor={districtId}>Distrito</Label>
+					<Input
+						id={districtId}
+						maxLength={60}
+						placeholder="Ex.: 4590"
+						value={customer.district}
+						onChange={(event) => setCustomer({ district: event.target.value })}
+					/>
+				</div>
+				<div className="space-y-2">
+					<Label htmlFor={phoneId}>Celular (WhatsApp)</Label>
+					<PhoneInput
+						id={phoneId}
+						ref={phoneInputRef}
+						value={customer.phone}
+						onValueChange={(phone) => setCustomer({ phone })}
+						aria-invalid={phoneError ? true : undefined}
+						aria-describedby={phoneError ? errorId : undefined}
+					/>
+					{phoneError && (
+						<p id={errorId} role="alert" className="text-sm font-bold text-destructive">
+							{phoneError}
+						</p>
+					)}
+				</div>
+				<p className="text-[13px] text-muted-foreground">
+					Não é obrigatório. Ajuda a loja a saber de quem é o pedido.
+				</p>
 			</div>
-			<div className="space-y-2">
-				<Label htmlFor={clubId}>Clube</Label>
-				<Input
-					id={clubId}
-					maxLength={120}
-					placeholder="Nome do seu clube"
-					value={customer.club}
-					onChange={(event) => setCustomer({ club: event.target.value })}
-				/>
-			</div>
-			<div className="space-y-2">
-				<Label htmlFor={districtId}>Distrito</Label>
-				<Input
-					id={districtId}
-					maxLength={60}
-					placeholder="Ex.: 4590"
-					value={customer.district}
-					onChange={(event) => setCustomer({ district: event.target.value })}
-				/>
-			</div>
-			<div className="space-y-2">
-				<Label htmlFor={phoneId}>Celular (WhatsApp)</Label>
-				<PhoneInput
-					id={phoneId}
-					ref={phoneInputRef}
-					value={customer.phone}
-					onValueChange={(phone) => setCustomer({ phone })}
-					aria-invalid={phoneError ? true : undefined}
-					aria-describedby={phoneError ? errorId : undefined}
-				/>
-				{phoneError && (
-					<p id={errorId} role="alert" className="text-sm font-bold text-destructive">
-						{phoneError}
-					</p>
-				)}
-			</div>
-			<p className="text-[13px] text-muted-foreground">
-				Não é obrigatório. Ajuda a loja a saber de quem é o pedido.
-			</p>
-		</div>
+		</CartDrawer>
 	);
 }
 
-/** Totals + the confirm button (children, e.g. Cart.Payment and Cart.Customer, go right above it). */
+/** Compact sticky summary: totals, chosen payment and the confirm button. */
 export function CartSummary({ children }: { children?: ReactNode }) {
 	const { count, totalInCents } = useCart();
-	const { checkout } = useCartPage();
+	const { checkout, paymentMethod } = useCartPage();
 	const { labels } = useSiteSettings();
 	return (
 		<aside
@@ -449,14 +563,15 @@ export function CartSummary({ children }: { children?: ReactNode }) {
 						<Price cents={totalInCents} className="font-bold" />
 					</dd>
 				</div>
+				{/* The admin text is a full sentence ("Entrega em eventos ou a combinar"): plain, one line. */}
 				<div className="flex items-center justify-between gap-3">
-					<dt className="font-semibold text-muted-foreground">Entrega</dt>
-					<dd className="text-right">
-						{labels.shipping ? (
-							<ShippingBadge />
-						) : (
-							<span className="font-semibold text-muted-foreground">A combinar</span>
-						)}
+					<dt className={cn("font-semibold text-muted-foreground", labels.shipping && "sr-only")}>Entrega</dt>
+					<dd className="font-semibold text-muted-foreground">{labels.shipping || "A combinar"}</dd>
+				</div>
+				<div className="flex items-center justify-between gap-3">
+					<dt className="font-semibold text-muted-foreground">Pagamento</dt>
+					<dd className={cn("text-right font-semibold", paymentMethod ? "text-foreground" : "text-muted-foreground")}>
+						{paymentMethod ? PAYMENT_METHOD_LABELS[paymentMethod] : "A escolher"}
 					</dd>
 				</div>
 				<div className="flex items-baseline justify-between gap-3 border-t-2 pt-4">

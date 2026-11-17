@@ -17,6 +17,7 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 	]);
 	await page.goto("/carrinho");
 	await page.getByRole("radio", { name: "Cartão de débito" }).check();
+	await page.getByRole("button", { name: /^Seus dados/ }).click();
 	await page.getByLabel("Clube", { exact: true }).fill("Rotaract Club Teste");
 	await page.getByLabel("Distrito", { exact: true }).fill("4590");
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
@@ -123,6 +124,7 @@ test("forma de pagamento, nome e celular informados no carrinho aparecem no pain
 	await seedCart(page, [{ productId: "9", name: "Caneca + Tirante + Pin", priceInCents: 4200, quantity: 5 }]);
 	await page.goto("/carrinho");
 	await page.getByRole("radio", { name: "Pix" }).check();
+	await page.getByRole("button", { name: /^Seus dados/ }).click();
 	await page.getByLabel("Nome", { exact: true }).fill("Gabriel Teste");
 	await page.getByLabel("Celular (WhatsApp)").fill("19 98888-7777");
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
