@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
 	createContext,
+	Suspense,
 	useContext,
 	useEffect,
 	useId,
@@ -12,18 +14,23 @@ import {
 	type ReactNode,
 	type RefObject,
 } from "react";
-import { flushSync } from "react-dom";
-import { CircleCheck, MessageCircle, ShoppingCart, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	ArrowRight,
+	Check,
+	CircleCheck,
+	CreditCard,
+	MessageCircle,
+	QrCode,
+	ShoppingCart,
+	Trash2,
+	WalletCards,
+	type LucideIcon,
+} from "lucide-react";
 import { Price } from "@/components/store/price";
 import { PRODUCT_PHOTO_FRAME, ProductPhoto } from "@/components/store/product-photo";
 import { QuantityStepper } from "@/components/store/quantity-stepper";
 import { Button } from "@/components/ui/button";
-import {
-	DisclosureContent,
-	DisclosureRoot,
-	DisclosureTrigger,
-	useDisclosureOpen,
-} from "@/components/ui/disclosure";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -35,12 +42,20 @@ import { useCheckout, type CheckoutCustomer, type PlacedOrder } from "@/hooks/us
 import { cn } from "@/lib/utils";
 import { productPath } from "@/modules/catalog/domain/product";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/modules/orders/domain/order";
-import { formatPrice } from "@/modules/shared/domain/money";
-import { isValidWhatsapp, normalizeWhatsapp, onlyDigits } from "@/modules/shared/domain/phone";
+import { formatWhatsapp, isValidWhatsapp, normalizeWhatsapp, onlyDigits } from "@/modules/shared/domain/phone";
+import {
+	CART_STEP_PARAM,
+	CART_STEPS,
+	cartStepIndex,
+	cartStepSearch,
+	parseCartStep,
+	type CartStepId,
+} from "./steps";
 
 /*
  * Cart page parts. Each state part (Loading, Empty, Review, Placed) renders
  * only in its own state, so a page composes all of them and the right one shows.
+ * The review is a checkout in steps (see ./steps.ts): products, details, payment.
  */
 
 /** The customer details are remembered in this browser for the next order. */
@@ -48,17 +63,26 @@ const CUSTOMER_KEY = "rotaract-customer";
 
 const EMPTY_CUSTOMER: CheckoutCustomer = { name: "", club: "", district: "", phone: "" };
 
-/** The drawers of the review step. */
-type CartSection = "items" | "payment" | "customer";
+const PAYMENT_METHOD_ICONS: Record<PaymentMethod, LucideIcon> = {
+	pix: QrCode,
+	credit_card: CreditCard,
+	debit_card: WalletCards,
+};
 
-/** Items and payment start open; the optional details start closed (less scrolling). */
-const INITIAL_SECTIONS: Record<CartSection, boolean> = { items: true, payment: true, customer: false };
+/** What takes the focus when a step shows up. */
+type StepFocus = "heading" | "phone";
 
 type CartPageContextValue = {
 	placed: PlacedOrder | null;
-	checkout: () => void;
-	openSections: Record<CartSection, boolean>;
-	setSectionOpen: (section: CartSection, open: boolean) => void;
+	/** Furthest step the visitor reached (index): the progress bar lets them go back to it. */
+	reachedIndex: number;
+	goToStep: (step: CartStepId, focus?: StepFocus) => void;
+	/** Each step is a form (id below): submitting goes to the next step, or finishes on the last one. */
+	continueFrom: (step: CartStepId) => void;
+	stepFormId: string;
+	/** Called once a new step is on screen: moves the focus there. */
+	stepShown: () => void;
+	stepHeadingRef: RefObject<HTMLHeadingElement | null>;
 	/** Required: chosen before finishing (null = not chosen yet). */
 	paymentMethod: PaymentMethod | null;
 	setPaymentMethod: (method: PaymentMethod) => void;
@@ -92,12 +116,34 @@ function readSavedCustomer(): CheckoutCustomer | null {
 	}
 }
 
+/** Step in the address bar, read in event handlers (outside of rendering). */
+function stepFromLocation(): CartStepId {
+	return parseCartStep(new URLSearchParams(window.location.search).get(CART_STEP_PARAM));
+}
+
+function stepUrl(step: CartStepId): string {
+	return `${window.location.pathname}${cartStepSearch(step, window.location.search)}`;
+}
+
+/** Focuses a field and centers it on screen, so the sticky header can't cover it. */
+function focusField(element: HTMLElement | null | undefined) {
+	if (!element) return;
+	element.focus({ preventScroll: true });
+	const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	element.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+}
+
 const CartPageContext = createContext<CartPageContextValue | null>(null);
 
 function useCartPage() {
 	const context = useContext(CartPageContext);
 	if (!context) throw new Error("Use as partes do Cart dentro de <Cart.Root>");
 	return context;
+}
+
+/** Current step, from the address. Only inside Cart.Review (it provides the Suspense boundary). */
+function useCartStep(): CartStepId {
+	return parseCartStep(useSearchParams().get(CART_STEP_PARAM));
 }
 
 type CartState = "loading" | "empty" | "review" | "placed";
@@ -113,7 +159,10 @@ function useCartState(): CartState {
 export function CartRoot({ children }: { children: ReactNode }) {
 	const runCheckout = useCheckout();
 	const [placed, setPlaced] = useState<PlacedOrder | null>(null);
-	const [openSections, setOpenSections] = useState(INITIAL_SECTIONS);
+	const [reachedIndex, setReachedIndex] = useState(0);
+	const stepFormId = useId();
+	const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
+	const pendingFocus = useRef<StepFocus>("heading");
 	const [paymentMethod, setPaymentMethodState] = useState<PaymentMethod | null>(null);
 	const [paymentError, setPaymentError] = useState<string | null>(null);
 	const paymentGroupRef = useRef<HTMLDivElement | null>(null);
@@ -138,20 +187,26 @@ export function CartRoot({ children }: { children: ReactNode }) {
 		}
 	}, [customer, customerLoaded]);
 
-	const setSectionOpen = (section: CartSection, open: boolean) =>
-		setOpenSections((current) => ({ ...current, [section]: open }));
+	/** Each step is a history entry: the back button returns to the previous one. */
+	const goToStep = (step: CartStepId, focus: StepFocus = "heading") => {
+		const current = stepFromLocation();
+		setReachedIndex((reached) => Math.max(reached, cartStepIndex(current), cartStepIndex(step)));
+		if (step === current) return;
+		pendingFocus.current = focus;
+		// Next.js keeps useSearchParams in sync with the native History API (no reload).
+		window.history.pushState(null, "", stepUrl(step));
+	};
 
-	/**
-	 * Opens a drawer right away (flushSync), focuses the field inside and centers
-	 * it on screen, so the sticky header can't cover it.
-	 */
-	const reveal = (section: CartSection, target: () => HTMLElement | null | undefined) => {
-		flushSync(() => setSectionOpen(section, true));
-		const element = target();
-		if (!element) return;
-		element.focus({ preventScroll: true });
-		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		element.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+	const stepShown = () => {
+		const focus = pendingFocus.current;
+		pendingFocus.current = "heading";
+		if (focus === "phone" && phoneInputRef.current) {
+			focusField(phoneInputRef.current);
+			return;
+		}
+		// Screen readers announce the new step; on the phone it starts from the top.
+		stepHeadingRef.current?.focus({ preventScroll: true });
+		window.scrollTo({ top: 0 });
 	};
 
 	const setPaymentMethod = (method: PaymentMethod) => {
@@ -165,9 +220,9 @@ export function CartRoot({ children }: { children: ReactNode }) {
 	};
 
 	/**
-	 * The phone is optional, but when filled it must be a real number. Checked only
-	 * when finishing: validating on blur would show the message right as the button
-	 * is pressed, pushing it down so the click misses.
+	 * The phone is optional, but when filled it must be a real number. Checked when
+	 * leaving its step: validating on blur would show the message right as the
+	 * button is pressed, pushing it down so the click misses.
 	 */
 	const validatePhone = () => {
 		const phone = normalizeWhatsapp(customer.phone);
@@ -177,15 +232,14 @@ export function CartRoot({ children }: { children: ReactNode }) {
 	};
 
 	const checkout = () => {
-		setPaymentError(paymentMethod ? null : PAYMENT_ERROR);
-		const phoneValid = validatePhone();
 		if (!paymentMethod) {
-			// The payment comes first on the page: start there.
-			reveal("payment", () => paymentGroupRef.current?.querySelector<HTMLInputElement>("input"));
+			setPaymentError(PAYMENT_ERROR);
+			focusField(paymentGroupRef.current?.querySelector<HTMLInputElement>("input"));
 			return;
 		}
-		if (!phoneValid) {
-			reveal("customer", () => phoneInputRef.current);
+		// Already checked on its own step; the address could skip it.
+		if (!validatePhone()) {
+			goToStep("dados", "phone");
 			return;
 		}
 		const order = runCheckout(paymentMethod, {
@@ -196,17 +250,32 @@ export function CartRoot({ children }: { children: ReactNode }) {
 		});
 		if (order) {
 			setPlaced(order);
+			// The order is done: a reload shows the (now empty) cart, not the payment step.
+			window.history.replaceState(null, "", stepUrl(CART_STEPS[0].id));
 			window.scrollTo({ top: 0 });
 		}
+	};
+
+	const continueFrom = (step: CartStepId) => {
+		if (step === "dados" && !validatePhone()) {
+			focusField(phoneInputRef.current);
+			return;
+		}
+		const next = CART_STEPS[cartStepIndex(step) + 1];
+		if (next) goToStep(next.id);
+		else checkout();
 	};
 
 	return (
 		<CartPageContext.Provider
 			value={{
 				placed,
-				checkout,
-				openSections,
-				setSectionOpen,
+				reachedIndex,
+				goToStep,
+				continueFrom,
+				stepFormId,
+				stepShown,
+				stepHeadingRef,
 				paymentMethod,
 				setPaymentMethod,
 				paymentError,
@@ -241,8 +310,7 @@ export function CartHeader() {
 	);
 }
 
-export function CartLoading() {
-	if (useCartState() !== "loading") return null;
+function CartSkeleton() {
 	return (
 		<div aria-busy="true" aria-label="Carregando o carrinho" className="space-y-3">
 			{[0, 1].map((key) => (
@@ -250,6 +318,11 @@ export function CartLoading() {
 			))}
 		</div>
 	);
+}
+
+export function CartLoading() {
+	if (useCartState() !== "loading") return null;
+	return <CartSkeleton />;
 }
 
 export function CartEmpty() {
@@ -268,8 +341,8 @@ export function CartEmpty() {
 	);
 }
 
-/** Two columns on desktop: the drawers on the left, the sticky summary on the right. */
-export function CartReview({ className, ...props }: ComponentProps<"div">) {
+/** Two columns on desktop: the steps on the left, the sticky summary on the right. */
+export function CartReview({ className, children, ...props }: ComponentProps<"div">) {
 	if (useCartState() !== "review") return null;
 	return (
 		<div
@@ -278,59 +351,142 @@ export function CartReview({ className, ...props }: ComponentProps<"div">) {
 				className,
 			)}
 			{...props}
-		/>
-	);
-}
-
-/** Left column: the drawers (items, payment, customer details), one under the other. */
-export function CartSections({ className, ...props }: ComponentProps<"div">) {
-	return <div className={cn("min-w-0 space-y-4", className)} {...props} />;
-}
-
-/** Title, a hint next to it and a summary that shows only while the drawer is closed. */
-function CartDrawerHeading({ title, hint, summary }: { title: string; hint?: string; summary?: string }) {
-	const open = useDisclosureOpen();
-	return (
-		<>
-			<span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-				<span className="font-display text-xl leading-tight font-semibold text-foreground">{title}</span>
-				{hint && <span className="text-[13px] font-semibold text-muted-foreground">{hint}</span>}
-			</span>
-			{!open && summary && (
-				<span className="mt-1 block truncate text-sm font-semibold text-muted-foreground">{summary}</span>
-			)}
-		</>
-	);
-}
-
-/** One drawer of the cart; its open state lives in Cart.Root (checkout can open it). */
-function CartDrawer({
-	section,
-	title,
-	hint,
-	summary,
-	invalid = false,
-	children,
-}: {
-	section: CartSection;
-	title: string;
-	hint?: string;
-	summary?: string;
-	invalid?: boolean;
-	children: ReactNode;
-}) {
-	const { openSections, setSectionOpen } = useCartPage();
-	return (
-		<DisclosureRoot
-			open={openSections[section]}
-			onOpenChange={(open) => setSectionOpen(section, open)}
-			className={cn("rounded-2xl border-2 transition-colors", invalid && "border-destructive/60")}
 		>
-			<DisclosureTrigger className="rounded-2xl px-4 py-4 sm:px-5">
-				<CartDrawerHeading title={title} hint={hint} summary={summary} />
-			</DisclosureTrigger>
-			<DisclosureContent className="border-t-2 px-4 pt-4 pb-5 sm:px-5">{children}</DisclosureContent>
-		</DisclosureRoot>
+			{/* The step comes from the address (useSearchParams), which needs a Suspense boundary. */}
+			<Suspense fallback={<CartSkeleton />}>{children}</Suspense>
+		</div>
+	);
+}
+
+/** Left column: the progress bar and the current step. Moves the focus to each new step. */
+export function CartSteps({ className, ...props }: ComponentProps<"div">) {
+	const step = useCartStep();
+	const { stepShown } = useCartPage();
+	const shownStep = useRef(step);
+	useEffect(() => {
+		if (shownStep.current === step) return;
+		shownStep.current = step;
+		stepShown();
+	}, [step, stepShown]);
+	return <div className={cn("min-w-0 space-y-5", className)} {...props} />;
+}
+
+/** "1 Produtos — 2 Seus dados — 3 Pagamento"; steps already reached can be clicked to go back. */
+export function CartStepper() {
+	const step = useCartStep();
+	const { reachedIndex, goToStep } = useCartPage();
+	const currentIndex = cartStepIndex(step);
+	const lastReached = Math.max(reachedIndex, currentIndex);
+	return (
+		<nav aria-label="Etapas do pedido">
+			<ol className="grid grid-cols-3">
+				{CART_STEPS.map((item, index) => {
+					const current = index === currentIndex;
+					const done = index < currentIndex;
+					const reached = index <= lastReached;
+					const clickable = reached && !current;
+					const content = (
+						<>
+							<span
+								aria-hidden
+								className={cn(
+									"relative z-10 flex size-9 items-center justify-center rounded-full border-2 text-sm font-extrabold transition-colors",
+									current
+										? "border-primary bg-primary text-primary-foreground"
+										: reached
+											? "border-primary bg-background text-primary"
+											: "border-border bg-background text-muted-foreground",
+								)}
+							>
+								{done ? <Check className="size-4" strokeWidth={3.5} /> : index + 1}
+							</span>
+							<span
+								className={cn(
+									"text-[13px] leading-tight font-bold",
+									current ? "text-foreground" : "text-muted-foreground",
+									clickable && "underline-offset-4 group-hover:text-primary group-hover:underline",
+								)}
+							>
+								{item.label}
+							</span>
+							{done && <span className="sr-only">, concluída</span>}
+						</>
+					);
+					return (
+						<li key={item.id} className="relative flex justify-center">
+							{index > 0 && (
+								<span
+									aria-hidden
+									className={cn(
+										"absolute top-[17px] right-1/2 h-0.5 w-full",
+										reached ? "bg-primary" : "bg-border",
+									)}
+								/>
+							)}
+							{clickable ? (
+								<button
+									type="button"
+									onClick={() => goToStep(item.id)}
+									className="group flex flex-col items-center gap-1.5 rounded-xl px-2 pb-1 text-center outline-none focus-visible:ring-[3px] focus-visible:ring-link/40"
+								>
+									{content}
+								</button>
+							) : (
+								<span
+									aria-current={current ? "step" : undefined}
+									className="flex flex-col items-center gap-1.5 px-2 pb-1 text-center"
+								>
+									{content}
+								</span>
+							)}
+						</li>
+					);
+				})}
+			</ol>
+		</nav>
+	);
+}
+
+/**
+ * One step of the checkout, shown only while it is the current one. Its content
+ * is a form, so Enter in a field (or "Ir" on the phone keyboard) continues; the
+ * summary's main button submits it.
+ */
+export function CartStep({ step, children }: { step: CartStepId; children: ReactNode }) {
+	const current = useCartStep();
+	const { stepHeadingRef, stepFormId, continueFrom } = useCartPage();
+	const headingId = useId();
+	if (current !== step) return null;
+	const index = cartStepIndex(step);
+	const { title, description, optional } = CART_STEPS[index];
+	return (
+		<section aria-labelledby={headingId} className="rounded-2xl border-2 p-4 sm:p-6">
+			<header className="mb-5 space-y-1">
+				<p className="text-xs font-extrabold tracking-[1px] text-label uppercase">
+					Etapa {index + 1} de {CART_STEPS.length}
+				</p>
+				<h2
+					id={headingId}
+					ref={stepHeadingRef}
+					tabIndex={-1}
+					className="font-display text-2xl leading-tight font-semibold text-foreground outline-none"
+				>
+					{title}
+					{optional && <span className="ml-2 text-sm font-semibold text-muted-foreground">(opcional)</span>}
+				</h2>
+				<p className="text-sm text-muted-foreground">{description}</p>
+			</header>
+			<form
+				id={stepFormId}
+				noValidate
+				onSubmit={(event) => {
+					event.preventDefault();
+					continueFrom(step);
+				}}
+			>
+				{children}
+			</form>
+		</section>
 	);
 }
 
@@ -405,73 +561,7 @@ export function CartLines() {
 	);
 }
 
-/** Drawer with the cart lines (Cart.Lines goes inside); closed, it lists what is in the cart. */
-export function CartItems({ children }: { children: ReactNode }) {
-	const { items, count, totalInCents } = useCart();
-	return (
-		<CartDrawer
-			section="items"
-			title="Itens"
-			hint={`${count} ${count === 1 ? "item" : "itens"} · ${formatPrice(totalInCents)}`}
-			summary={items.map((item) => `${item.quantity}x ${item.name}`).join(", ")}
-		>
-			{children}
-		</CartDrawer>
-	);
-}
-
-/** Required drawer: Pix, credit card or debit card. */
-export function CartPayment() {
-	const { paymentMethod, setPaymentMethod, paymentError, paymentGroupRef } = useCartPage();
-	const errorId = useId();
-	const name = useId();
-	return (
-		<CartDrawer
-			section="payment"
-			title="Forma de pagamento"
-			hint={paymentMethod ? undefined : "obrigatória"}
-			summary={paymentMethod ? PAYMENT_METHOD_LABELS[paymentMethod] : "Escolha Pix, crédito ou débito"}
-			invalid={Boolean(paymentError)}
-		>
-			<div
-				ref={paymentGroupRef}
-				role="radiogroup"
-				aria-label="Forma de pagamento"
-				aria-required
-				aria-invalid={paymentError ? true : undefined}
-				aria-describedby={paymentError ? errorId : undefined}
-				className="grid gap-2 md:grid-cols-3"
-			>
-				{PAYMENT_METHODS.map((method) => (
-					<RadioCard
-						key={method}
-						name={name}
-						value={method}
-						checked={paymentMethod === method}
-						onChange={() => setPaymentMethod(method)}
-						className={cn("items-center py-2.5", paymentError && "border-destructive/60")}
-					>
-						<span className="text-sm font-extrabold text-foreground">{PAYMENT_METHOD_LABELS[method]}</span>
-					</RadioCard>
-				))}
-			</div>
-			{paymentError && (
-				<p id={errorId} role="alert" className="mt-3 text-sm font-bold text-destructive">
-					{paymentError}
-				</p>
-			)}
-		</CartDrawer>
-	);
-}
-
-/** "Maria · Rotaract Club Centro · Distrito 4590" (what was filled), for the closed drawer. */
-function customerSummary({ name, club, district, phone }: CheckoutCustomer): string {
-	const parts = [name.trim(), club.trim(), district.trim() && `Distrito ${district.trim()}`].filter(Boolean);
-	if (parts.length > 0) return parts.join(" · ");
-	return phone ? "Celular informado" : "Nome, clube, distrito e celular";
-}
-
-/** Optional drawer: name, club, district and phone only feed the store's order history. */
+/** Optional fields: name, club, district and phone only feed the store's order history. */
 export function CartCustomer() {
 	const { customer, setCustomer, phoneError, phoneInputRef } = useCartPage();
 	const nameId = useId();
@@ -480,74 +570,121 @@ export function CartCustomer() {
 	const phoneId = useId();
 	const errorId = useId();
 	return (
-		<CartDrawer
-			section="customer"
-			title="Seus dados"
-			hint="opcional"
-			summary={customerSummary(customer)}
-			invalid={Boolean(phoneError)}
-		>
-			<div className="grid gap-4 sm:max-w-md">
-				<div className="space-y-2">
-					<Label htmlFor={nameId}>Nome</Label>
-					<Input
-						id={nameId}
-						autoComplete="name"
-						maxLength={120}
-						placeholder="Como podemos te chamar?"
-						value={customer.name}
-						onChange={(event) => setCustomer({ name: event.target.value })}
-					/>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor={clubId}>Clube</Label>
-					<Input
-						id={clubId}
-						maxLength={120}
-						placeholder="Nome do seu clube"
-						value={customer.club}
-						onChange={(event) => setCustomer({ club: event.target.value })}
-					/>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor={districtId}>Distrito</Label>
-					<Input
-						id={districtId}
-						maxLength={60}
-						placeholder="Ex.: 4590"
-						value={customer.district}
-						onChange={(event) => setCustomer({ district: event.target.value })}
-					/>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor={phoneId}>Celular (WhatsApp)</Label>
-					<PhoneInput
-						id={phoneId}
-						ref={phoneInputRef}
-						value={customer.phone}
-						onValueChange={(phone) => setCustomer({ phone })}
-						aria-invalid={phoneError ? true : undefined}
-						aria-describedby={phoneError ? errorId : undefined}
-					/>
-					{phoneError && (
-						<p id={errorId} role="alert" className="text-sm font-bold text-destructive">
-							{phoneError}
-						</p>
-					)}
-				</div>
-				<p className="text-[13px] text-muted-foreground">
-					Não é obrigatório. Ajuda a loja a saber de quem é o pedido.
-				</p>
+		<div className="grid gap-4 sm:max-w-md">
+			<div className="space-y-2">
+				<Label htmlFor={nameId}>Nome</Label>
+				<Input
+					id={nameId}
+					autoComplete="name"
+					maxLength={120}
+					placeholder="Como podemos te chamar?"
+					value={customer.name}
+					onChange={(event) => setCustomer({ name: event.target.value })}
+				/>
 			</div>
-		</CartDrawer>
+			<div className="space-y-2">
+				<Label htmlFor={clubId}>Clube</Label>
+				<Input
+					id={clubId}
+					maxLength={120}
+					placeholder="Nome do seu clube"
+					value={customer.club}
+					onChange={(event) => setCustomer({ club: event.target.value })}
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor={districtId}>Distrito</Label>
+				<Input
+					id={districtId}
+					maxLength={60}
+					placeholder="Ex.: 4590"
+					value={customer.district}
+					onChange={(event) => setCustomer({ district: event.target.value })}
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor={phoneId}>Celular (WhatsApp)</Label>
+				<PhoneInput
+					id={phoneId}
+					ref={phoneInputRef}
+					value={customer.phone}
+					onValueChange={(phone) => setCustomer({ phone })}
+					aria-invalid={phoneError ? true : undefined}
+					aria-describedby={phoneError ? errorId : undefined}
+				/>
+				{phoneError && (
+					<p id={errorId} role="alert" className="text-sm font-bold text-destructive">
+						{phoneError}
+					</p>
+				)}
+			</div>
+		</div>
 	);
 }
 
-/** Compact sticky summary: totals, chosen payment and the confirm button. */
+/** Required choice: Pix, credit card or debit card. */
+export function CartPayment() {
+	const { paymentMethod, setPaymentMethod, paymentError, paymentGroupRef } = useCartPage();
+	const errorId = useId();
+	const name = useId();
+	return (
+		<div>
+			<div
+				ref={paymentGroupRef}
+				role="radiogroup"
+				aria-label="Forma de pagamento"
+				aria-required
+				aria-invalid={paymentError ? true : undefined}
+				aria-describedby={paymentError ? errorId : undefined}
+				className="grid gap-2 sm:grid-cols-3"
+			>
+				{PAYMENT_METHODS.map((method) => {
+					const Icon = PAYMENT_METHOD_ICONS[method];
+					return (
+						<RadioCard
+							key={method}
+							name={name}
+							value={method}
+							checked={paymentMethod === method}
+							onChange={() => setPaymentMethod(method)}
+							className={cn("items-center py-3", paymentError && "border-destructive/60")}
+						>
+							<span className="flex items-center gap-2 text-sm font-extrabold text-foreground">
+								<Icon className="size-5 shrink-0 text-primary" strokeWidth={2.25} aria-hidden />
+								{PAYMENT_METHOD_LABELS[method]}
+							</span>
+						</RadioCard>
+					);
+				})}
+			</div>
+			{paymentError && (
+				<p id={errorId} role="alert" className="mt-3 text-sm font-bold text-destructive">
+					{paymentError}
+				</p>
+			)}
+		</div>
+	);
+}
+
+/** "Maria · Rotaract Club Centro · Distrito 4590 · +55 19 …" (only what was filled). */
+function customerSummary({ name, club, district, phone }: CheckoutCustomer): string {
+	return [name.trim(), club.trim(), district.trim() && `Distrito ${district.trim()}`, phone && formatWhatsapp(phone)]
+		.filter(Boolean)
+		.join(" · ");
+}
+
+/**
+ * Sticky summary, on every step: totals, the chosen payment and the step's
+ * buttons. "Finalizar pelo WhatsApp" only shows on the last step.
+ */
 export function CartSummary({ children }: { children?: ReactNode }) {
-	const { count, totalInCents } = useCart();
-	const { checkout, paymentMethod } = useCartPage();
+	const step = useCartStep();
+	const { items, count, totalInCents } = useCart();
+	const { paymentMethod, customer, stepFormId, goToStep } = useCartPage();
 	const { labels } = useSiteSettings();
+	const index = cartStepIndex(step);
+	const previous = CART_STEPS[index - 1];
+	const { next } = CART_STEPS[index];
 	return (
 		<aside
 			aria-label="Resumo do pedido"
@@ -555,14 +692,31 @@ export function CartSummary({ children }: { children?: ReactNode }) {
 		>
 			<SectionLabel>Resumo</SectionLabel>
 			<dl className="space-y-3 text-[15px]">
-				<div className="flex items-center justify-between gap-3">
+				<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
 					<dt className="font-semibold text-muted-foreground">
 						{count} {count === 1 ? "item" : "itens"}
 					</dt>
 					<dd>
 						<Price cents={totalInCents} className="font-bold" />
 					</dd>
+					{/* Past the products step the list is out of sight: keep what is being ordered here. */}
+					{previous && (
+						<dd className="col-span-2 line-clamp-2 text-sm text-muted-foreground">
+							{items
+								.map((item) => `${item.quantity}x ${item.name}${item.size ? ` (${item.size})` : ""}`)
+								.join(", ")}
+						</dd>
+					)}
 				</div>
+				{/* Last step: everything that goes in the order, for a final check. */}
+				{!next && (
+					<div className="space-y-0.5">
+						<dt className="font-semibold text-muted-foreground">Seus dados</dt>
+						<dd className="text-sm font-semibold break-words text-foreground">
+							{customerSummary(customer) || "Não informados"}
+						</dd>
+					</div>
+				)}
 				{/* The admin text is a full sentence ("Entrega em eventos ou a combinar"): plain, one line. */}
 				<div className="flex items-center justify-between gap-3">
 					<dt className={cn("font-semibold text-muted-foreground", labels.shipping && "sr-only")}>Entrega</dt>
@@ -583,17 +737,33 @@ export function CartSummary({ children }: { children?: ReactNode }) {
 			</dl>
 			{children}
 			<div className="space-y-3 pb-1">
-				<Button block size="lg" onClick={checkout}>
-					<MessageCircle /> Finalizar pelo WhatsApp
+				{/* Submits the step's form: the step validates its fields before going on. */}
+				<Button block size="lg" type="submit" form={stepFormId}>
+					{next ? (
+						<>
+							{next} <ArrowRight />
+						</>
+					) : (
+						<>
+							<MessageCircle /> Finalizar pelo WhatsApp
+						</>
+					)}
 				</Button>
-				<Button asChild block variant="secondary">
-					<Link href="/">Continuar comprando</Link>
-				</Button>
+				{previous ? (
+					<Button block variant="secondary" onClick={() => goToStep(previous.id)}>
+						<ArrowLeft /> Voltar para {previous.label.toLowerCase()}
+					</Button>
+				) : (
+					<Button asChild block variant="secondary">
+						<Link href="/">Continuar comprando</Link>
+					</Button>
+				)}
 			</div>
-			<p className="text-[13px] leading-relaxed text-muted-foreground">
-				O WhatsApp abre com o pedido já escrito. É só enviar a mensagem para combinar pagamento e
-				entrega com a loja.
-			</p>
+			{!next && (
+				<p className="text-[13px] leading-relaxed text-muted-foreground">
+					O WhatsApp abre com o pedido já escrito. É só enviar a mensagem para a loja receber.
+				</p>
+			)}
 		</aside>
 	);
 }

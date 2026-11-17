@@ -7,7 +7,14 @@ test("páginas da loja não vazam para os lados", async ({ page }) => {
 		{ productId: "10", name: "Camiseta + Caneca + Tirante + Pin", priceInCents: 8990, quantity: 12, size: "GG" },
 		{ productId: "1", name: "Caneca 850mL", priceInCents: 2500, quantity: 1 },
 	]);
-	for (const path of ["/", "/product/12", "/product/10", "/carrinho"]) {
+	for (const path of [
+		"/",
+		"/product/12",
+		"/product/10",
+		"/carrinho?etapa=dados",
+		"/carrinho?etapa=pagamento",
+		"/carrinho",
+	]) {
 		await page.goto(path);
 		await expect(page.locator("main")).toBeVisible();
 		await expectNoHorizontalScroll(page);

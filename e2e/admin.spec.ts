@@ -16,10 +16,11 @@ test("pedido feito na loja aparece no painel e pode ser visto, editado e excluí
 		{ productId: "1", name: "Caneca 850mL", priceInCents: 2500, quantity: 1 },
 	]);
 	await page.goto("/carrinho");
-	await page.getByRole("radio", { name: "Cartão de débito" }).check();
-	await page.getByRole("button", { name: /^Seus dados/ }).click();
+	await page.getByRole("button", { name: "Continuar para seus dados" }).click();
 	await page.getByLabel("Clube", { exact: true }).fill("Rotaract Club Teste");
 	await page.getByLabel("Distrito", { exact: true }).fill("4590");
+	await page.getByRole("button", { name: "Continuar para o pagamento" }).click();
+	await page.getByRole("radio", { name: "Cartão de débito" }).check();
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
 	const code = (await page.getByText(/^#[0-9A-Z]{6}$/).textContent())?.slice(1) ?? "";
 	await expect.poll(() => opened.length).toBe(1);
@@ -123,10 +124,11 @@ test("forma de pagamento, nome e celular informados no carrinho aparecem no pain
 	await captureWhatsapp(page);
 	await seedCart(page, [{ productId: "9", name: "Caneca + Tirante + Pin", priceInCents: 4200, quantity: 5 }]);
 	await page.goto("/carrinho");
-	await page.getByRole("radio", { name: "Pix" }).check();
-	await page.getByRole("button", { name: /^Seus dados/ }).click();
+	await page.getByRole("button", { name: "Continuar para seus dados" }).click();
 	await page.getByLabel("Nome", { exact: true }).fill("Gabriel Teste");
 	await page.getByLabel("Celular (WhatsApp)").fill("19 98888-7777");
+	await page.getByRole("button", { name: "Continuar para o pagamento" }).click();
+	await page.getByRole("radio", { name: "Pix" }).check();
 	await page.getByRole("button", { name: "Finalizar pelo WhatsApp" }).click();
 	const code = (await page.getByText(/^#[0-9A-Z]{6}$/).textContent())?.slice(1) ?? "";
 

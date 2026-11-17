@@ -10,11 +10,14 @@ mouse, a foto aumenta e acompanha o cursor; um
 clique (ou toque no celular) abre a tela cheia, com pinça ou toque duplo para
 ampliar, arrastar para ver os detalhes e deslizar entre as fotos.
 
-**Carrinho (`/carrinho`)**: o visitante revisa os itens (tamanho, quantidade,
-remover) e o total, escolhe a forma de pagamento (Pix, cartão de crédito ou
-cartão de débito, obrigatória) e pode informar nome, clube, distrito e celular
-(opcionais). "Finalizar pelo WhatsApp" abre a conversa com o pedido já escrito
-(com a forma de pagamento) e registra o pedido no painel.
+**Carrinho (`/carrinho`)**: o pedido é fechado em 3 etapas, com o resumo
+(itens, total, pagamento) sempre ao lado: **Produtos** (tamanho, quantidade,
+remover), **Seus dados** (nome, clube, distrito e celular, opcionais e lembrados
+neste aparelho) e **Pagamento** (Pix, cartão de crédito ou cartão de débito,
+obrigatória). A etapa fica no endereço (`?etapa=dados`, `?etapa=pagamento`), então
+o voltar do navegador/celular volta uma etapa. "Finalizar pelo WhatsApp" só
+aparece na última etapa: abre a conversa com o pedido já escrito (com a forma de
+pagamento) e registra o pedido no painel.
 
 **Pedidos** são registrados quando o visitante finaliza o carrinho. Cada pedido
 tem um código (ex.: `#K7P2QX`) que também vai na mensagem do WhatsApp, para

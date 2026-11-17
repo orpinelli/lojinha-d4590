@@ -2,14 +2,15 @@ import {
 	CartCustomer,
 	CartEmpty,
 	CartHeader,
-	CartItems,
 	CartLines,
 	CartLoading,
 	CartPayment,
 	CartPlaced,
 	CartReview,
 	CartRoot,
-	CartSections,
+	CartStep,
+	CartStepper,
+	CartSteps,
 	CartSummary,
 } from "./cart";
 
@@ -21,14 +22,13 @@ import {
  *   <Cart.Loading />
  *   <Cart.Empty />
  *   <Cart.Review>
- *     <Cart.Sections>            (drawers that open and close)
- *       <Cart.Items>
- *         <Cart.Lines />
- *       </Cart.Items>
- *       <Cart.Payment />
- *       <Cart.Customer />
- *     </Cart.Sections>
- *     <Cart.Summary />            (sticky: totals + finish button)
+ *     <Cart.Steps>                       (one step at a time, in the order of ./steps.ts)
+ *       <Cart.Stepper />                  (progress: Produtos — Seus dados — Pagamento)
+ *       <Cart.Step step="produtos"><Cart.Lines /></Cart.Step>
+ *       <Cart.Step step="dados"><Cart.Customer /></Cart.Step>
+ *       <Cart.Step step="pagamento"><Cart.Payment /></Cart.Step>
+ *     </Cart.Steps>
+ *     <Cart.Summary />                    (sticky on every step: totals + the step's buttons)
  *   </Cart.Review>
  *   <Cart.Placed />
  * </Cart.Root>
@@ -39,11 +39,12 @@ export const Cart = {
 	Loading: CartLoading,
 	Empty: CartEmpty,
 	Review: CartReview,
-	Sections: CartSections,
-	Items: CartItems,
+	Steps: CartSteps,
+	Stepper: CartStepper,
+	Step: CartStep,
 	Lines: CartLines,
-	Summary: CartSummary,
-	Payment: CartPayment,
 	Customer: CartCustomer,
+	Payment: CartPayment,
+	Summary: CartSummary,
 	Placed: CartPlaced,
 };

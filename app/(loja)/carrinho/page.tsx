@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 	robots: { index: false },
 };
 
-/** Review step: the visitor checks everything before sending the order. */
+/** Checkout in three steps (products, details, payment) before sending the order. */
 export default function CartPage() {
 	return (
 		<div className="min-h-screen bg-background">
@@ -25,13 +25,18 @@ export default function CartPage() {
 					<Cart.Loading />
 					<Cart.Empty />
 					<Cart.Review>
-						<Cart.Sections>
-							<Cart.Items>
+						<Cart.Steps>
+							<Cart.Stepper />
+							<Cart.Step step="produtos">
 								<Cart.Lines />
-							</Cart.Items>
-							<Cart.Payment />
-							<Cart.Customer />
-						</Cart.Sections>
+							</Cart.Step>
+							<Cart.Step step="dados">
+								<Cart.Customer />
+							</Cart.Step>
+							<Cart.Step step="pagamento">
+								<Cart.Payment />
+							</Cart.Step>
+						</Cart.Steps>
 						<Cart.Summary />
 					</Cart.Review>
 					<Cart.Placed />
